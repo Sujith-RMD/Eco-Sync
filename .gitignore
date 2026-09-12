@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# local npm cache (sandboxed install)
+.npm-cache/
+
+# build output
+.next/
+out/
+
+# environment / secrets
+.env
+.env.local
+.env.*.local
+
+# generated one-time event credentials (never commit)
+credentials/
+
+# logs
+*.log
+
+# os / editor
+.DS_Store
+.idea/
+.vscode/
