@@ -32,10 +32,12 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     kind: "DIGITAL",
     title: "COLD BOOT",
     briefing:
-      "PHYSICAL CLUE — the WHITEBOARD at the ops pod, east wall. The after-hours shift log was almost erased, but one handle keeps surfacing through the wipe marks: the watcher who signed the intrusion. Enter the handle.",
+      "SYSTEM OFFLINE. BREACH DETECTED AT 02:17\n" +
+      "Last message recovered: SXDBENOB KVSKC XSQRDYGV\n" +
+      "Add the digits of the time. Then step back.",
     answer: "NIGHTOWL",
     hints: [
-      "Think of a nocturnal predator used as a codename — one word, no spaces.",
+      "The digits of 02:17 add up to a number. Move each letter back that many places in the alphabet. Enter one word, no spaces.",
     ],
     points: 100,
   },
@@ -43,66 +45,81 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     code: "P2",
     orderIndex: 2,
     kind: "DIGITAL",
-    title: "PAPER TRAIL",
+    title: "BADGE LOG",
     briefing:
-      "PHYSICAL CLUE — the STICKY NOTE on the archive door frame. The badge-reader dump pinned beneath it shows one quiet room the intruder kept returning to. Enter the location.",
-    answer: "LIBRARY",
-    hints: ["The quietest room in the building. Shelves, not servers."],
+      "Badge | Entry | Exit\n" +
+      "1107 | 01:50 | 02:15\n" +
+      "2291 | 02:10 | 02:45\n" +
+      "3048 | 02:05 | 02:30\n" +
+      "4415 | 01:30 | 02:16\n" +
+      "\n" +
+      "Security note: the entry scanner's clock runs 10 minutes slow. Which badge was inside at 2:17 AM?",
+    answer: "3048",
+    hints: [
+      "Only the entry scanner is wrong. Push every ENTRY time forward by 10 minutes and leave the exit times as printed. Enter the four digits.",
+    ],
     points: 100,
   },
   {
     code: "P3",
     orderIndex: 3,
     kind: "DIGITAL",
-    title: "THE CLONE",
-    briefing:
-      "PHYSICAL CLUE — the PROJECTION ROOM. The terminal beside the projector lists cloned staff badges pulled from the archive logs. One badge ID was burned into three doors on the same night. Enter the badge ID.",
-    answer: "3048",
-    hints: ["Four digits. It starts with a three and ends with an eight."],
+    title: "FOUR FRAGMENTS",
+    briefing: "The breach signal left 4 fragments in this room. Find them.",
+    answer: "LIBRARY",
+    hints: [
+      "All four fragments are inside your own room, never in the corridor. Join them in the order they are numbered and enter one word.",
+    ],
     points: 100,
   },
   {
     code: "P4",
     orderIndex: 4,
     kind: "DIGITAL",
-    title: "PAYLOAD",
+    title: "THE MARK",
     briefing:
-      "PHYSICAL CLUE — the WINDOW-SIDE desk, tagged as the exfiltration point. The workstation's device history confirms unauthorized removable media. Enter the device class that was used.",
+      "The intruder left a mark on the machine in your room. What did they plug into the terminal?",
     answer: "USB",
-    hints: ["Three letters. It was plugged into the front port."],
+    hints: ["Three letters. Name the kind of device, not a brand."],
     points: 100,
   },
   {
     code: "P5",
     orderIndex: 5,
     kind: "DIGITAL",
-    title: "PAINTED GREEN",
+    title: "ONE KEY TOO FAR",
     briefing:
-      "PHYSICAL CLUE — the PROJECTOR is still glowing. The draft sustainability deck open on it dresses the emissions numbers up as something pretty. One word describes rigging eco-metrics like this. Enter the word.",
+      "The keylogger caught the file name, but the intruder typed in the dark, one key too far right. Check the door.",
     answer: "GREENWASH",
-    hints: ["A compound word: a colour, plus concealment."],
+    hints: [
+      "Read what is on the door, then move one key to the LEFT on a QWERTY keyboard for every character. One word.",
+    ],
     points: 100,
   },
   {
     code: "P6",
     orderIndex: 6,
     kind: "DIGITAL",
-    title: "SOURCE OF TRUTH",
-    briefing:
-      "PHYSICAL CLUE — the OUTDOOR KIOSK by the courtyard doors. An analysis stub is printing from the ECO-SYNC pipeline, naming the single dataset the insider falsified. Enter the dataset.",
+    title: "ON THE GLASS",
+    briefing: "The first data they touched is written backwards on the glass.",
     answer: "WATER",
-    hints: ["ECO-SYNC's flagship metric. Clear, life-critical, five letters."],
+    hints: [
+      "Copy the word off the glass exactly as it appears, then read your copy from the other end. Five letters.",
+    ],
     points: 100,
   },
   {
     code: "P7",
     orderIndex: 7,
     kind: "DIGITAL",
-    title: "THE HAND",
+    title: "THE CASE CODE",
     briefing:
-      "PHYSICAL CLUE — the DOOR-SIDE cipher strip. The final corrupted log line, once repaired, decodes toward one word — what the insiders call their own. Enter the word. +150 points and the round is yours.",
+      "Build the case code. Each tag is Puzzle number, then letter position.\n" +
+      "6-3 · 5-2 · 3-5 · 1-2 · 1-5 · 1-6 · 6-5",
     answer: "TRAITOR",
-    hints: ["Seven letters. Betrayal as a person, not the act."],
+    hints: [
+      "Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
+    ],
     points: 150,
   },
 ];
