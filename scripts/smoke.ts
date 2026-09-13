@@ -30,7 +30,7 @@ import {
   submitAnswer,
   useHint,
 } from "@/server/game/engine";
-import { ROUND1_PUZZLES, ROUND2_PUZZLES } from "@/server/game/catalogue";
+import { ROUND1_PUZZLES, ROUND2_PUZZLES, FINAL_CODE_PUZZLE_CODE } from "@/server/game/catalogue";
 
 let passed = 0;
 let failed = 0;
@@ -164,13 +164,19 @@ async function main() {
 
   /* round 2 --------------------------------------------------------------- */
   console.log("ROUND 02");
-  // S2 cannot be answered before Envelope A checkpoint clears
-  await submitAnswer({ teamId: t1.id, roundCode: "ROUND_2", puzzleCode: "S1", rawAnswer: ROUND2_PUZZLES[0]!.answer });
-  const earlyFinal = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_2", puzzleCode: "FINAL", rawAnswer: "TRUTH" });
+  // Codes are referenced positionally: the supplied chain is S1, S3, S4…S8, LAST.
+  const [first, second, third, lastPuzzle] = [
+    ROUND2_PUZZLES[0]!,
+    ROUND2_PUZZLES[1]!,
+    ROUND2_PUZZLES[2]!,
+    ROUND2_PUZZLES[ROUND2_PUZZLES.length - 1]!,
+  ];
+  await submitAnswer({ teamId: t1.id, roundCode: "ROUND_2", puzzleCode: first.code, rawAnswer: first.answer });
+  const earlyFinal = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_2", puzzleCode: lastPuzzle.code, rawAnswer: lastPuzzle.answer });
   expect(earlyFinal.outcome === "LOCKED_PUZZLE", "final code cannot be submitted early");
 
-  const gatedS2 = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_2", puzzleCode: "S2", rawAnswer: ROUND2_PUZZLES[2]!.answer });
-  expect(gatedS2.outcome === "LOCKED_PUZZLE", "S2 waits for envelope A checkpoint");
+  const gatedNext = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_2", puzzleCode: third.code, rawAnswer: third.answer });
+  expect(gatedNext.outcome === "LOCKED_PUZZLE", `${third.code} waits for ${second.code} to clear`);
 
   for (const puzzle of ROUND2_PUZZLES.slice(1)) {
     await clearLockout(t1.id, "ROUND_2", puzzle.code);

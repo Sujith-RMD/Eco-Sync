@@ -36,12 +36,9 @@ describe("Round 1 catalogue", () => {
 
 /* spec §15/§16 — Round 2 chain integrity */
 describe("Round 2 catalogue", () => {
-  it("follows the supplied progression exactly", () => {
+  it("contains the supplied questions in play order", () => {
     expect(ROUND2_PUZZLES.map((p) => p.code)).toEqual([
       "S1",
-      "ENV_A",
-      "S2",
-      "ENV_B",
       "S3",
       "S4",
       "S5",
@@ -50,33 +47,50 @@ describe("Round 2 catalogue", () => {
       "S8",
       FINAL_CODE_PUZZLE_CODE,
     ]);
+  });
+
+  it("keeps order_index contiguous, which the unlock chain depends on", () => {
+    // engine.ts unlocks exactly `orderIndex + 1`, so a gap does not merely skip
+    // a puzzle: it strands every later one and the culprit vote never unseals.
     expect(ROUND2_PUZZLES.map((p) => p.orderIndex)).toEqual(
-      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      ROUND2_PUZZLES.map((_, index) => index + 1),
     );
   });
 
-  it("models both envelopes as zero-point physical checkpoints", () => {
-    for (const code of ["ENV_A", "ENV_B"]) {
-      const checkpoint = ROUND2_PUZZLES.find((p) => p.code === code);
-      expect(checkpoint).toBeDefined();
-      expect(checkpoint!.kind).toBe("PHYSICAL_CHECKPOINT");
-      expect(checkpoint!.points).toBe(0);
+  it("retires the invented envelope and water-data chain", () => {
+    expect(ROUND2_PUZZLES.some((p) => p.code.startsWith("ENV"))).toBe(false);
+    expect(ROUND2_PUZZLES.some((p) => /water/i.test(p.title))).toBe(false);
+    expect(ROUND2_PUZZLES.some((p) => p.kind === "PHYSICAL_CHECKPOINT")).toBe(false);
+    // Every supplied question scores; nothing is a zero-point checkpoint.
+    for (const puzzle of ROUND2_PUZZLES) expect(puzzle.points).toBeGreaterThan(0);
+  });
+
+  it("closes with the final code, which is the 150-point capstone", () => {
+    const last = ROUND2_PUZZLES[ROUND2_PUZZLES.length - 1]!;
+    expect(last.code).toBe(FINAL_CODE_PUZZLE_CODE);
+    expect(last.kind).toBe("FINAL_CODE");
+    expect(last.points).toBe(150);
+    expect(normalizeAnswer(last.answer)).toHaveLength(5);
+  });
+
+  it("matches the answer shapes pinned by the supplied documents", () => {
+    const byCode = new Map(ROUND2_PUZZLES.map((p) => [p.code, p]));
+    expect(normalizeAnswer(byCode.get("S1")!.answer)).toMatch(/^[A-Z]{6}$/);
+    // The two HHMM clock answers.
+    for (const code of ["S3", "S8"]) {
+      expect(normalizeAnswer(byCode.get(code)!.answer)).toMatch(/^\d{4}$/);
+    }
+    // The three newspaper-derived words are long; teams type them exactly.
+    for (const code of ["S4", "S5", "S6"]) {
+      expect(normalizeAnswer(byCode.get(code)!.answer)).toMatch(/^[A-Z]{8,}$/);
     }
   });
 
-  it("marks the final code puzzle accordingly", () => {
-    const final = ROUND2_PUZZLES.find((p) => p.code === FINAL_CODE_PUZZLE_CODE);
-    expect(final!.kind).toBe("FINAL_CODE");
-    expect(final!.points).toBe(150);
-  });
-
-  it("round 2 letters and envelopes stay consistent with supplied anchors", () => {
-    // S1 spells its six-letter word from first letters of the draft.
-    expect(normalizeAnswer(ROUND2_PUZZLES[0]!.answer)).toHaveLength(6);
-    // Envelope checkpoints are code-like (4 digits) references.
-    for (const code of ["ENV_A", "ENV_B"]) {
-      const checkpoint = ROUND2_PUZZLES.find((p) => p.code === code)!;
-      expect(normalizeAnswer(checkpoint.answer)).toMatch(/^\d{4}$/);
+  it("gives every puzzle a non-empty briefing and answer", () => {
+    for (const puzzle of ROUND2_PUZZLES) {
+      expect(puzzle.briefing.trim().length).toBeGreaterThan(0);
+      expect(normalizeAnswer(puzzle.answer).length).toBeGreaterThan(0);
+      for (const hint of puzzle.hints) expect(hint.trim().length).toBeGreaterThan(0);
     }
   });
 });

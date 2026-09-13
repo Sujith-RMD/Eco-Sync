@@ -125,134 +125,129 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* ROUND 2 — S1 → Envelope A → S2 → Envelope B → S3…S8 → FINAL → vote          */
+/* ROUND 2 — supplied questions only, in play order:                            */
+/* S1 → S3 → S4 → S5 → S6 → S7 → S8 → LAST → vote                              */
 /* -------------------------------------------------------------------------- */
 
-/** Supplied water-data differences from the open-auditorium installation. */
-export const WATER_DATA_DIFFERENCES = [20, 18, 21, 20, 8] as const;
+/**
+ * The closing puzzle's code. The engine resolves the culprit-vote unlock through
+ * this constant (`engine.ts`), so the value must match the seeded row exactly.
+ */
+export const FINAL_CODE_PUZZLE_CODE = "LAST";
 
-export const FINAL_CODE_PUZZLE_CODE = "FINAL";
+/**
+ * Round 2 is authored from the supplied documents. `orderIndex` must stay
+ * contiguous from 1: `submitAnswer` unlocks `orderIndex + 1` by exact match, so
+ * a gap silently strands every later puzzle and an unset answer can block the
+ * culprit vote.
+ *
+ * RUNBOOK — S7's answer is a sentinel, not a solution: the two QR payloads were
+ * not supplied. Round 2 must not be opened until it is armed, because LAST sits
+ * directly behind it.
+ */
+export const UNARMED_SENTINEL = "__UNARMED__";
 
 export const ROUND2_PUZZLES: PuzzleSeed[] = [
   {
     code: "S1",
     orderIndex: 1,
     kind: "DIGITAL",
-    title: "THE DRAFT",
+    title: "The Crumpled Draft",
     briefing:
-      "PHYSICAL CLUE — the CRUMPLED DRAFT at the recycling station on the round-2 floor. Six lines, hastily balled up and thrown away. Read the first letter of each line, top to bottom. Enter the word they spell.",
+      "The culprit threw away a draft somewhere in this room.\n" +
+      "What did they do to the figures?",
     answer: "FUDGED",
-    hints: ["Six letters. What was done to the numbers."],
+    hints: [],
     points: 100,
-  },
-  {
-    code: "ENV_A",
-    orderIndex: 2,
-    kind: "PHYSICAL_CHECKPOINT",
-    title: "ENVELOPE A",
-    briefing:
-      "PHYSICAL CHECKPOINT — retrieve ENVELOPE A from the evidence locker at the Facilities Office. Inside is a Library ID badge collected on the night of the breach. Enter the badge's ID number to log the evidence.",
-    answer: "3048",
-    hints: ["You have seen this badge ID before. Four digits."],
-    points: 0,
-  },
-  {
-    code: "S2",
-    orderIndex: 3,
-    kind: "DIGITAL",
-    title: "BADGE ORIGIN",
-    briefing:
-      "Envelope A's Library badge is genuine — the archive confirmed it. Every staff badge is minted by exactly one office. Enter the name of the office that issued badge 3048.",
-    answer: "FACILITIES",
-    hints: ["The same office that held the envelope. One word."],
-    points: 100,
-  },
-  {
-    code: "ENV_B",
-    orderIndex: 4,
-    kind: "PHYSICAL_CHECKPOINT",
-    title: "ENVELOPE B",
-    briefing:
-      "PHYSICAL CHECKPOINT — retrieve ENVELOPE B from the auditorium podium. Inside is the judging schedule from the final review night. Enter Rohan's presentation start time (HHMM, 24-hour).",
-    answer: "0215",
-    hints: ["Four digits, leading zero. Early morning."],
-    points: 0,
   },
   {
     code: "S3",
-    orderIndex: 5,
+    orderIndex: 2,
     kind: "DIGITAL",
-    title: "NAME ON THE SLOT",
-    briefing:
-      "The 02:15 slot on the judging schedule mattered — someone needed that room empty at that exact time. Whose name sits on that slot? Enter the first name.",
-    answer: "ROHAN",
-    hints: ["The presenter whose start time you logged from Envelope B."],
+    title: "The Judging Schedule",
+    briefing: "When did Rohan's presentation begin? (HHMM)",
+    answer: "0215",
+    hints: [],
     points: 100,
   },
   {
     code: "S4",
-    orderIndex: 6,
+    orderIndex: 3,
     kind: "DIGITAL",
-    title: "WATER DATA — I",
+    title: "Newspaper — Crossword",
     briefing:
-      "PHYSICAL CLUE — the OPEN AUDITORIUM outdoor installation. The original ECO-SYNC water dataset is etched at the base of the stage, next to the published report. Column 1 differs by 20. Decode 20 with A1Z26 (A=1 … Z=26) and enter the letter.",
-    answer: "T",
-    hints: ["The difference is already a letter position. No math needed."],
+      "Solve the crossword on page 4.\n" +
+      "Take the first letter of each answer, in hint order.\n" +
+      "What was the real crime?",
+    answer: "MISREPORTING",
+    hints: [],
     points: 100,
   },
   {
     code: "S5",
-    orderIndex: 7,
+    orderIndex: 4,
     kind: "DIGITAL",
-    title: "WATER DATA — II",
+    title: "Newspaper — Highlighted Letters",
     briefing:
-      "Same installation. Column 2 of the water dataset differs by 18 from the published report. Decode 18 with A1Z26 and enter the letter.",
-    answer: "R",
-    hints: ["A=1 … Z=26. Count carefully."],
+      "The highlighted letters on page 2 reveal a hidden word.\n" +
+      "What is the word?",
+    answer: "INTERDEPENDENCE",
+    hints: [],
     points: 100,
   },
   {
     code: "S6",
-    orderIndex: 8,
+    orderIndex: 5,
     kind: "DIGITAL",
-    title: "WATER DATA — III",
+    title: "Newspaper — Fill in the Blanks",
     briefing:
-      "Same installation. Column 3 differs by 21. Decode 21 with A1Z26 and enter the letter.",
-    answer: "U",
-    hints: ["A=1 … Z=26. You are past the midpoint of the alphabet."],
+      "Fill in the blanks in the paragraph on page 2.\n" +
+      "What word is revealed?",
+    answer: "MISUNDERSTOOD",
+    hints: [],
     points: 100,
   },
   {
     code: "S7",
-    orderIndex: 9,
+    orderIndex: 6,
     kind: "DIGITAL",
-    title: "WATER DATA — IV",
+    title: "Newspaper — Hidden QR Codes",
     briefing:
-      "Same installation. Column 4 differs by 20. Decode 20 with A1Z26 and enter the letter.",
-    answer: "T",
-    hints: ["A repeat of position one."],
+      "The words “waste” and “podium” point to two QR codes hidden in the room.\n" +
+      "Find and scan both QR codes.\n" +
+      "What do they reveal?",
+    // Supplied material does not state the solution. Arm via the runbook.
+    answer: UNARMED_SENTINEL,
+    hints: [],
     points: 100,
   },
   {
     code: "S8",
-    orderIndex: 10,
+    orderIndex: 7,
     kind: "DIGITAL",
-    title: "WATER DATA — V",
+    title: "The Gate Log",
     briefing:
-      "Same installation. Column 5 differs by 8. Decode 8 with A1Z26 and enter the letter.",
-    answer: "H",
-    hints: ["Single digits sit at the top of the alphabet."],
+      "One suspect's car is in the gate log, and their statement says they were home all night.\n" +
+      "When did that car enter campus? (HHMM)",
+    answer: "0158",
+    hints: [],
     points: 100,
   },
   {
     code: FINAL_CODE_PUZZLE_CODE,
-    orderIndex: 11,
+    orderIndex: 8,
     kind: "FINAL_CODE",
-    title: "THE VERDICT",
+    title: "Outdoor Backup",
     briefing:
-      "You hold five letters recovered from the original water data. Order them and enter the word — the code that closes the breach and unseals the culprit vote.",
+      "CASE UPDATE: BACKUP LOCATED\n" +
+      "ECO-SYNC kept one last backup of the original data.\n" +
+      "\n" +
+      "I have a stage but no roof, and my seats face the open sky.\n" +
+      "Find the backup there.\n" +
+      "Decode it, then return here with the code and the culprit's name.",
+    // The name is carried by the culprit vote, which this answer unseals.
     answer: "TRUTH",
-    hints: ["What the data was owed from the very start."],
+    hints: [],
     points: 150,
   },
 ];

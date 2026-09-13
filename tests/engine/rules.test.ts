@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  a1z26ToLetters,
   normalizeAnswer,
   rankRound2,
   rankStandings,
@@ -9,12 +8,7 @@ import {
   type StandingInput,
 } from "@/server/game/rules";
 import { GAME_CONSTANTS } from "@/server/game/constants";
-import {
-  FINAL_CODE_PUZZLE_CODE,
-  ROUND1_PUZZLES,
-  ROUND2_PUZZLES,
-  WATER_DATA_DIFFERENCES,
-} from "@/server/game/catalogue";
+import { ROUND1_PUZZLES } from "@/server/game/catalogue";
 
 const { scoring, round1 } = GAME_CONSTANTS;
 
@@ -135,23 +129,5 @@ describe("ranking and tie-breaks", () => {
       { teamId: 4, name: "D", score: 600, solvedCount: 11, finishedAt: null },
     ]);
     expect(ranked.map((r) => r.teamId)).toEqual([3, 2, 4, 1]);
-  });
-});
-
-/* spec §16 — Round 2 water-data decoding */
-describe("water-data decoding", () => {
-  it("A1Z26-decodes the supplied differences to the final code", () => {
-    const letters = a1z26ToLetters(WATER_DATA_DIFFERENCES);
-    const finalPuzzle = ROUND2_PUZZLES.find((p) => p.code === FINAL_CODE_PUZZLE_CODE);
-    expect(finalPuzzle).toBeDefined();
-    expect(letters).toBe(normalizeAnswer(finalPuzzle!.answer));
-  });
-
-  it("S4–S8 answers are exactly the decoded letters, in order", () => {
-    const letters = a1z26ToLetters(WATER_DATA_DIFFERENCES).split("");
-    const steps = ROUND2_PUZZLES.filter((p) => /^S[4-8]$/.test(p.code)).sort(
-      (a, b) => a.orderIndex - b.orderIndex,
-    );
-    expect(steps.map((s) => normalizeAnswer(s.answer))).toEqual(letters);
   });
 });

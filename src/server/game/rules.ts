@@ -133,16 +133,3 @@ export function rankRound2<
     return a.teamId - b.teamId;
   });
 }
-
-/* -------------------------------------------------------------------------- */
-/* Round 2 water-data decoding (spec §16)                                      */
-/* -------------------------------------------------------------------------- */
-
-/** A1Z26 mapping: 1→A … 26→Z. Out-of-range values produce "?". */
-export function a1z26ToLetters(differences: readonly number[]): string {
-  return differences
-    .map((n) =>
-      n >= 1 && n <= 26 ? String.fromCharCode("A".charCodeAt(0) + n - 1) : "?",
-    )
-    .join("");
-}
