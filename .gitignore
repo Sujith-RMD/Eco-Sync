@@ -16,6 +16,13 @@ out/
 # generated one-time event credentials (never commit)
 credentials/
 
+# scratch files and hand-pasted endpoints (never commit)
+.tmp-*
+tmp-*
+
+# incremental build artifacts
+tsconfig.tsbuildinfo
+
 # logs
 *.log
 
@@ -23,3 +30,5 @@ credentials/
 .DS_Store
 .idea/
 .vscode/
+
+.vercel

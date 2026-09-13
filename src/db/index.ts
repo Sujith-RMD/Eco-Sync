@@ -2,10 +2,19 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
 
-const databaseUrl = process.env.DATABASE_URL;
+/**
+ * `||`, not `??`: Vercel's first-party Postgres publishes its endpoint as
+ * `DATABASE_POSTGRES_URL` (plus `_NON_POOLING`) and leaves `DATABASE_URL`
+ * untouched, while `vercel env pull`/`env run` mask storage variables as empty
+ * strings. Accepting either name means the app connects on a deployment without
+ * anyone having to duplicate a credential across two variable names, and an
+ * empty-but-present `DATABASE_URL` correctly falls through instead of throwing.
+ * Locally, `.env` still wins because `DATABASE_URL` is set there.
+ */
+const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_POSTGRES_URL;
 
 if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
+  throw new Error("DATABASE_URL or DATABASE_POSTGRES_URL is required");
 }
 
 const globalForDb = globalThis as typeof globalThis & {
