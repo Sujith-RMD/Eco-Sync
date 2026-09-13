@@ -11,10 +11,13 @@ interface LogoMarkProps {
  * which is about 6px at this slot's 28px, and the event name is already set in
  * type beside this mark. The full lockup stays at /logo.png for large use.
  *
- * A plain <img> rather than next/image on purpose: self-hosted image
- * optimization needs `sharp`, which this project does not install, and a broken
- * logo during the event is worse than an unoptimized one. The 112px asset also
- * covers 3x-density phones at the largest size the topbar asks for.
+ * A plain <img> rather than next/image on purpose: `sharp` is installed, so the
+ * optimizer would work — but every page view would then route this static file
+ * through a server-side fetch-and-rescale on the same single process that
+ * measures out at roughly ten renders per second with sixty handsets polling.
+ * A plain <img> costs the server nothing after the first hit and is cached for
+ * the rest of the event. The 112px asset also covers 3x-density phones at the
+ * largest size the topbar asks for.
  */
 export function LogoMark({ className }: LogoMarkProps) {
   return (

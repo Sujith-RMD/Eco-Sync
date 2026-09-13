@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
@@ -36,12 +37,26 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="min-h-dvh bg-abyss-950 font-display text-ink antialiased">
         {children}
         {/*
-          Vercel Web Analytics. Rendered only on Vercel's own runtime: off-platform
-          a rehearsal served from the laptop would make every phone fetch a script
-          whose events have nowhere to be attributed to. `mode` stays at its
-          default `auto`, so a real deployment reports as production.
+          Vercel observability, rendered only on Vercel's own runtime. Off-platform
+          a rehearsal served from the laptop would make every phone fetch scripts
+          whose events cannot be attributed to a project, for no measurement in
+          return. One gate covers both because they share that dependency:
+
+            Analytics     — page views and visitors.
+            SpeedInsights — real-user Core Web Vitals (LCP / CLS / INP) from the
+                            actual handsets in the venue, which is the number
+                            worth having before 60 devices arrive at once.
+
+          Both keep their default reporting modes, so a real deployment measures
+          production traffic. Enable each in the project's Vercel dashboard; the
+          packages only send, they do not switch collection on.
         */}
-        {process.env.VERCEL === "1" ? <Analytics /> : null}
+        {process.env.VERCEL === "1" ? (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        ) : null}
       </body>
     </html>
   );
