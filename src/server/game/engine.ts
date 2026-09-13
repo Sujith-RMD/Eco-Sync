@@ -29,6 +29,8 @@ import {
   SUSPECTS,
   isKnownSuspect,
 } from "@/server/game/catalogue";
+import { auditRoundAnswers } from "@/server/game/content-guard";
+import { describeUnarmed } from "@/server/game/unarmed";
 import { logAudit } from "@/server/audit/log";
 import type {
   LeaderboardRow,
@@ -856,6 +858,36 @@ export async function startRound(
     if (participants.length === 0) {
       return { ok: false, message: "No qualified units. Run QUALIFY TOP 15 first." };
     }
+  }
+
+  /*
+    Fail closed on content that cannot be completed. An un-armed answer strands
+    every link behind it (the chain unseals `orderIndex + 1` by exact match), and
+    an empty chain strands the whole round, so neither may be opened — the
+    operator is told which links to fix rather than discovering it from 60 rooms.
+  */
+  const answerAudit = await auditRoundAnswers(round.id);
+  const roundLabel = code === "ROUND_1" ? "Round 01" : "Round 02";
+  let blockReason: string | null = null;
+  if (answerAudit.total === 0) {
+    blockReason = `${roundLabel} has no puzzles. Seed the event before opening it.`;
+  } else if (answerAudit.unarmed.length > 0) {
+    blockReason = describeUnarmed(answerAudit.unarmed, answerAudit.total, roundLabel);
+  }
+  if (blockReason !== null) {
+    await logAudit({
+      actorType: "ADMIN",
+      actorId: adminId,
+      action: "round.start.blocked",
+      entity: "round",
+      entityId: code,
+      meta: {
+        reason: answerAudit.total === 0 ? "NO_PUZZLES" : "UNARMED_ANSWERS",
+        unarmed: answerAudit.unarmed.map((entry) => entry.code),
+        detail: blockReason,
+      },
+    });
+    return { ok: false, message: blockReason };
   }
 
   const now = new Date();
