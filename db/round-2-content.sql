@@ -62,7 +62,7 @@ cross join (values
 
   ('S3', 2, 'DIGITAL',
    'The Judging Schedule',
-   E'When did Rohan''s presentation begin? (HHMM)',
+   E'When did Rohan''s presentation begin? (HHMM, no colon)',
    '0215', 100),
 
   ('S4', 3, 'DIGITAL',
@@ -87,7 +87,7 @@ cross join (values
 
   ('S8', 7, 'DIGITAL',
    'The Gate Log',
-   E'One suspect''s car is in the gate log, and their statement says they were home all night.\nWhen did that car enter campus? (HHMM)',
+   E'One suspect''s car is in the gate log, and their statement says they were home all night.\nWhen did that car enter campus? (HHMM, no colon)',
    '0158', 100),
 
   ('LAST', 8, 'FINAL_CODE',

@@ -165,7 +165,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     orderIndex: 2,
     kind: "DIGITAL",
     title: "The Judging Schedule",
-    briefing: "When did Rohan's presentation begin? (HHMM)",
+    briefing: "When did Rohan's presentation begin? (HHMM, no colon)",
     answer: "0215",
     hints: [],
     points: 100,
@@ -228,7 +228,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     title: "The Gate Log",
     briefing:
       "One suspect's car is in the gate log, and their statement says they were home all night.\n" +
-      "When did that car enter campus? (HHMM)",
+      "When did that car enter campus? (HHMM, no colon)",
     answer: "0158",
     hints: [],
     points: 100,
