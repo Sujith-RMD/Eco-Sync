@@ -42,7 +42,7 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-acid" />
           <div className="space-y-1">
             <p className="font-mono text-[12px] uppercase tracking-[0.2em] text-acid">
-              Your unit's verdict is sealed
+              Your unit&apos;s verdict is sealed
             </p>
             <p className="font-display text-xl font-semibold text-ink">
               {chosen?.name ?? "—"}
@@ -65,9 +65,9 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
       >
         <p className="flex items-start gap-2.5 font-mono text-[12px] leading-relaxed text-dim">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-          The culprit vote unseals only when your unit breaks THE VERDICT — the
-          final code. Free-form accusations are not accepted: the verdict is
-          chosen from the official suspect roster.
+          The culprit vote unseals only when your unit breaks the final code on
+          the Answers tab. Free-form accusations are not accepted: the verdict is
+          chosen from the official roster above.
         </p>
       </Panel>
     );

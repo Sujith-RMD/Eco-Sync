@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Search } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/guards";
 import { adminTeamsOverview } from "@/server/game/engine";
+import { GAME_CONSTANTS } from "@/server/game/constants";
 import { cn } from "@/lib/utils/cn";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -121,7 +122,7 @@ export default async function AdminTeamsPage({
                       )}
                     </td>
                     <td className="hidden px-3 py-2.5 text-right tabular-nums text-mist lg:table-cell">
-                      {row.solvedR2}/12
+                      {row.solvedR2}/{GAME_CONSTANTS.round2.puzzleCount}
                     </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-2.5">
                       <div className="flex justify-end">

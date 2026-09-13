@@ -98,7 +98,7 @@ export default function LandingPage() {
           {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, index) => (
             <span key={index} className="flex items-center gap-10">
               <span>{item}</span>
-              <span className="text-acid/60">//</span>
+              <span className="text-acid/60">{"//"}</span>
             </span>
           ))}
         </div>

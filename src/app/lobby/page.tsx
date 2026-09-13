@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, ClipboardList, Lock, Radio } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { roundParticipations, rounds, teams } from "@/db/schema";
@@ -92,15 +92,17 @@ export default async function LobbyPage() {
           {team.name}
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-mist sm:text-base">
-          Choose your perimeter. The server keeps official time and score for
-          every move you make, and this board updates itself when a round opens
-          — refresh freely, state survives.
+          Official time, score and progression are kept on the server, and this
+          board updates itself when a round opens — refresh freely, state
+          survives. Once you are inside a round, three doors hold everything you
+          need: the case file, the answer link, and the suspects.
         </p>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 md:grid-cols-2">
           <Panel title="Round 01 // The Breach" aside={<StatusPill tone={r1.tone} label={r1.label} />}>
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-              {GAME_CONSTANTS.round1.durationMinutes}:00 · 7 links · top{" "}
+              {GAME_CONSTANTS.round1.durationMinutes}:00 ·{" "}
+              {GAME_CONSTANTS.round1.puzzleCount} links · top{" "}
               {GAME_CONSTANTS.round1.qualifyingTeams} advance
             </p>
             <div className="mt-5">
@@ -117,8 +119,9 @@ export default async function LobbyPage() {
 
           <Panel title="Round 02 // Culprit Trail" aside={<StatusPill tone={r2.tone} label={r2.label} />}>
             <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-              {GAME_CONSTANTS.round2.durationMinutes}:00 · envelopes · final code ·
-              culprit vote
+              {GAME_CONSTANTS.round2.durationMinutes}:00 ·{" "}
+              {GAME_CONSTANTS.round2.puzzleCount} links · final code · culprit
+              vote
             </p>
             <div className="mt-5">
               {board.hasRound2Access ? (
@@ -132,21 +135,6 @@ export default async function LobbyPage() {
                   Sealed — qualify in Round 01
                 </p>
               )}
-            </div>
-          </Panel>
-
-          <Panel title="Standings" aside={<Radio className="h-4 w-4 text-acid animate-pulse" />}>
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
-              Public feed · refreshes automatically
-            </p>
-            <div className="mt-5">
-              <Link
-                href="/leaderboard"
-                className={buttonClasses({ variant: "ghost", className: "w-full" })}
-              >
-                <ClipboardList className="h-4 w-4" />
-                Live leaderboard
-              </Link>
             </div>
           </Panel>
         </div>

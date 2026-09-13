@@ -28,7 +28,7 @@ import {
   getTeamRoundSnapshot,
   startRound,
   submitAnswer,
-  useHint,
+  claimHint,
 } from "@/server/game/engine";
 import { ROUND1_PUZZLES, ROUND2_PUZZLES, FINAL_CODE_PUZZLE_CODE } from "@/server/game/catalogue";
 
@@ -97,7 +97,7 @@ async function main() {
   const start1 = await startRound(admin!.id, "ROUND_1");
   expect(start1.ok, "round 01 starts (official clock armed)");
 
-  const hint = await useHint({ teamId: t1.id, roundCode: "ROUND_1", puzzleCode: "P1" });
+  const hint = await claimHint({ teamId: t1.id, roundCode: "ROUND_1", puzzleCode: "P1" });
   expect(hint.ok && typeof hint.hint === "string", "hint issued with −30 penalty");
 
   const wrong = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_1", puzzleCode: "P1", rawAnswer: "definitely-wrong" });

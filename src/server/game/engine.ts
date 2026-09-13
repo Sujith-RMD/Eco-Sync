@@ -514,7 +514,11 @@ export async function submitAnswer(input: {
 /* Hints (spec §11)                                                             */
 /* -------------------------------------------------------------------------- */
 
-export async function useHint(input: {
+/**
+ * Claim the next unspent hint. Named with a verb, not a `use` prefix: this is a
+ * server-side transaction, and the React lint rules reserve `use*` for hooks.
+ */
+export async function claimHint(input: {
   teamId: number;
   roundCode: RoundCode;
   puzzleCode: string;

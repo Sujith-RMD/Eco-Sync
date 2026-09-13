@@ -46,6 +46,19 @@
   --animate-marquee: marquee 38s linear infinite;
   --animate-flicker: flicker 7s linear infinite;
   --animate-reveal-up: reveal-up 0.9s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+  /* The unread badge must be noticed once, not watched. Short, and only on mount. */
+  --animate-badge-pop: badge-pop 0.3s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+
+  @keyframes badge-pop {
+    from {
+      transform: scale(0.35);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
 
   @keyframes scan-band {
     0% {
@@ -230,7 +243,8 @@
   .animate-marquee,
   .animate-scan-band,
   .animate-flicker,
-  .animate-blink-dot {
+  .animate-blink-dot,
+  .animate-badge-pop {
     animation: none;
   }
 }

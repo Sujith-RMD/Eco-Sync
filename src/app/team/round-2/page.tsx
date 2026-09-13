@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { requireTeam } from "@/lib/auth/guards";
-import { getTeamRoundSnapshot } from "@/server/game/engine";
-import { RoundShell, RoundStateView } from "@/components/game/round-states";
+import { AnswersTab } from "@/components/team/participant-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +7,14 @@ export const metadata: Metadata = {
   title: "Round 02 — Culprit Trail",
 };
 
-export default async function RoundTwoPage() {
-  const { team } = await requireTeam();
-  const result = await getTeamRoundSnapshot(team.id, team.name, "ROUND_2");
-
+export default function RoundTwoAnswersPage() {
   return (
-    <RoundShell eyebrow="Round 02 // 15 units // 3 prevail" title="CULPRIT TRAIL" teamName={team.name}>
-      <RoundStateView result={result} />
-    </RoundShell>
+    <AnswersTab
+      round="ROUND_2"
+      meta={{
+        eyebrow: "Round 02 // 15 units // 3 prevail",
+        title: "CULPRIT TRAIL",
+      }}
+    />
   );
 }

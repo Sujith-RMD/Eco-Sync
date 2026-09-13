@@ -299,7 +299,6 @@ export async function restartEventAction(
     "/admin/votes",
     "/admin/audit",
     "/lobby",
-    "/leaderboard",
   ]) {
     revalidatePath(path);
   }

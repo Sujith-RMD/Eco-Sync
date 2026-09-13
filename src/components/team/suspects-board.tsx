@@ -1,0 +1,158 @@
+import { Gavel, Lock, ScrollText, UserSearch } from "lucide-react";
+import type { RoundCode, VoteSnapshot } from "@/types/game";
+import { Panel } from "@/components/ui/panel";
+import { StatusPill } from "@/components/ui/status-pill";
+import { VotePanel } from "@/components/game/vote-panel";
+import { cn } from "@/lib/utils/cn";
+
+interface SuspectsBoardProps {
+  round: RoundCode;
+  /** Absent in Round 01: the engine only publishes the roster with Round 02. */
+  vote: VoteSnapshot | undefined;
+}
+
+/** Deterministic monogram from the published name. No new facts involved. */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toUpperCase();
+}
+
+function DossierRow({
+  index,
+  name,
+  role,
+  isVerdict,
+}: {
+  index: number;
+  name: string;
+  role: string;
+  isVerdict: boolean;
+}) {
+  return (
+    <li
+      className={cn(
+        "flex items-start gap-3 border-b border-line/50 px-3.5 py-4 last:border-b-0 transition-colors sm:px-5",
+        isVerdict ? "bg-alert/[0.06]" : "hover:bg-acid/[0.04]",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center border font-display text-[13px] font-bold tracking-tight",
+          isVerdict
+            ? "border-alert/50 bg-alert/10 text-alert"
+            : "border-line bg-abyss-950/60 text-mist",
+        )}
+      >
+        {initials(name)}
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <h3 className="min-w-0 break-words font-display text-[15px] font-semibold tracking-wide text-ink sm:text-base">
+            {name}
+          </h3>
+          <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.18em] text-dim sm:tracking-[0.26em]">
+            subject {String(index + 1).padStart(2, "0")}
+          </span>
+        </div>
+        <p className="min-w-0 break-words font-mono text-[10px] uppercase leading-relaxed tracking-[0.12em] text-dim sm:text-[11px] sm:tracking-[0.2em]">
+          {role}
+        </p>
+        {isVerdict ? (
+          <p className="flex items-center gap-1.5 pt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-alert">
+            <Gavel className="h-3 w-3" />
+            your unit&apos;s sealed verdict
+          </p>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
+/**
+ * Suspect dossiers.
+ *
+ * Everything on this screen comes from `VoteSnapshot`, which the engine already
+ * assembles — the roster, and the unit's own sealed verdict. Nothing is added:
+ * no evidence columns, no threat ratings, no per-person status the game does not
+ * already publish, because inventing those would hand units facts the supplied
+ * documents do not contain.
+ *
+ * In Round 01 the engine sends no roster at all, so this tab says so rather
+ * than rendering an empty board that implies the investigation has subjects.
+ */
+export function SuspectsBoard({ round, vote }: SuspectsBoardProps) {
+  if (!vote) {
+    return (
+      <Panel
+        title="Suspect dossiers"
+        aside={
+          <StatusPill
+            tone="muted"
+            label={`${round === "ROUND_1" ? "round 01" : "round 02"} · sealed`}
+            staticDot
+          />
+        }
+      >
+        <div className="flex items-start gap-3">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-dim" />
+          <div className="min-w-0 space-y-3">
+            <p className="font-mono text-[12px] leading-relaxed text-mist">
+              Command holds the suspect roster. Round 01 recovers the breach
+              itself — the people who could have done it are named in the next
+              phase, once the field is cut to the qualifying units.
+            </p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim sm:tracking-[0.24em]">
+              No subjects to examine in this round.
+            </p>
+          </div>
+        </div>
+      </Panel>
+    );
+  }
+
+  const verdictSuspect = vote.submitted
+    ? vote.suspects.find((suspect) => suspect.code === vote.suspectCode)
+    : undefined;
+
+  return (
+    <div className="space-y-4">
+      <Panel
+        title={`Roster — ${vote.suspects.length} subjects inside the perimeter`}
+        aside={
+          <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+            <UserSearch className="h-3.5 w-3.5" />
+            {vote.submitted ? "verdict sealed" : "under examination"}
+          </span>
+        }
+        contentClassName="p-0"
+      >
+        <ul>
+          {vote.suspects.map((suspect, index) => (
+            <DossierRow
+              key={suspect.code}
+              index={index}
+              name={suspect.name}
+              role={suspect.role}
+              isVerdict={verdictSuspect?.code === suspect.code}
+            />
+          ))}
+        </ul>
+      </Panel>
+
+      <p className="flex items-start gap-2.5 border border-line/60 px-3.5 py-3 font-mono text-[11px] leading-relaxed text-dim">
+        <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        Roles are the only particulars command has released on these subjects.
+        Statements, logs and the newspaper are physical evidence — your unit
+        reads them in the room, and nothing here paraphrases them.
+      </p>
+
+      <VotePanel vote={vote} />
+    </div>
+  );
+}

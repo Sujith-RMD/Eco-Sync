@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   AlertTriangle,
   CheckCircle2,
+  Gavel,
   KeyRound,
   Lightbulb,
   Loader2,
@@ -16,7 +18,8 @@ import {
   SendHorizontal,
   Trophy,
 } from "lucide-react";
-import { submitAnswerAction, useHintAction } from "@/server/team/actions";
+import { requestHintAction, submitAnswerAction } from "@/server/team/actions";
+import { emitStorylineSignal } from "@/lib/storyline/signal";
 import {
   initialSubmitState,
   type PuzzleSnapshot,
@@ -26,10 +29,9 @@ import { cn } from "@/lib/utils/cn";
 import { toEventClock, toEventStamp } from "@/lib/utils/time";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { TextInput } from "@/components/ui/field";
 import { AutoRefresh, LockoutBadge, ServerCountdown } from "@/components/game/timer";
-import { VotePanel } from "@/components/game/vote-panel";
 import { GAME_CONSTANTS } from "@/server/game/constants";
 
 /* -------------------------------------------------------------------------- */
@@ -56,9 +58,14 @@ function AnswerForm({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Puz
   const roundEnded = snapshot.round.status !== "ACTIVE" || roundDead;
   const locked = lockoutRemaining > 0;
 
+  // A correct answer advances the case file, so announce it before the refresh
+  // lands. Wrong answers never reach this line: the file did not change, and a
+  // notification that lied once would be ignored the second time.
   useEffect(() => {
-    if (state.status === "correct") router.refresh();
-  }, [state.status, router]);
+    if (state.status !== "correct") return;
+    emitStorylineSignal("unlocked", { roundCode: snapshot.round.code });
+    router.refresh();
+  }, [state.status, snapshot.round.code, router]);
 
   return (
     <div className="space-y-4">
@@ -155,7 +162,7 @@ function HintRequest({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Pu
               onClick={() => {
                 setError(null);
                 startTransition(async () => {
-                  const result = await useHintAction(snapshot.round.code, puzzle.code);
+                  const result = await requestHintAction(snapshot.round.code, puzzle.code);
                   if (!result.ok) setError(result.error ?? "Hint unavailable.");
                   setConfirming(false);
                   router.refresh();
@@ -280,6 +287,21 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
 }
 
 /* -------------------------------------------------------------------------- */
+/* Instrument cell                                                             */
+/* -------------------------------------------------------------------------- */
+
+function Metric({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5 bg-abyss-900/85 px-3 py-2.5 sm:px-4">
+      <span className="font-mono text-[9px] uppercase leading-none tracking-[0.16em] text-dim sm:text-[10px] sm:tracking-[0.24em]">
+        {label}
+      </span>
+      <span className="flex min-w-0 items-center leading-none">{children}</span>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Master console                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -290,30 +312,25 @@ function statusIcon(puzzle: PuzzleSnapshot) {
 }
 
 export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
-  const router = useRouter();
-  const currentCode = snapshot.currentPuzzleCode ?? snapshot.puzzles.at(-1)?.code ?? "";
-  const [selectedCode, setSelectedCode] = useState<string>(currentCode);
-
-  // Follow auto-advance: when the selected puzzle becomes solved, jump to the
-  // newly unlocked one.
-  useEffect(() => {
-    const selected = snapshot.puzzles.find((p) => p.code === selectedCode);
-    if (
-      selected?.status === "SOLVED" &&
-      snapshot.currentPuzzleCode &&
-      snapshot.currentPuzzleCode !== selectedCode
-    ) {
-      setSelectedCode(snapshot.currentPuzzleCode);
-    }
-    if (!selected && snapshot.puzzles.length > 0) {
-      setSelectedCode(snapshot.puzzles.at(-1)!.code);
-    }
-  }, [snapshot, selectedCode]);
-
+  /*
+    Which link the console shows is *derived*, not mirrored in an effect. A tap
+    is remembered only while it still points at a live link; the moment that link
+    is broken, the position follows the chain to whatever is current. The previous
+    version kept a copy of the code in state and corrected it from an effect, so
+    every auto-refresh rendered the stale selection first and then re-rendered —
+    and on a solved link that is a visible jump while the answer is still on screen.
+  */
+  const [pickedCode, setPickedCode] = useState<string | null>(null);
+  const autoCode =
+    snapshot.currentPuzzleCode ?? snapshot.puzzles.at(-1)?.code ?? "";
+  const picked = pickedCode
+    ? (snapshot.puzzles.find((p) => p.code === pickedCode) ?? null)
+    : null;
+  const activeCode = picked && picked.status !== "SOLVED" ? picked.code : autoCode;
   const selected =
-    snapshot.puzzles.find((p) => p.code === selectedCode) ??
+    snapshot.puzzles.find((p) => p.code === activeCode) ??
     snapshot.puzzles.find((p) => p.isCurrent) ??
-    snapshot.puzzles[0];
+    null;
 
   const roundEnded = snapshot.round.status === "ENDED";
 
@@ -321,39 +338,44 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
     <div className="space-y-5">
       <AutoRefresh intervalMs={8000} />
 
-      {/* telemetry strip */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Panel title="Official time">
+      {/*
+        Instrument strip, not four dashboard cards: one frame, hairline
+        dividers, and the same label/value rhythm in every cell. `gap-px` over a
+        line-coloured background draws the dividers without extra borders, and the
+        2x2 grid holds at 320px where a four-across row would crush the countdown.
+      */}
+      <div className="grid grid-cols-2 gap-px border border-line/70 bg-line/40 sm:grid-cols-4">
+        <Metric label="Official time">
           <ServerCountdown
             endsAt={snapshot.round.endsAt}
             serverTime={snapshot.round.serverTime}
-            className="font-display text-2xl font-bold tracking-tight sm:text-3xl"
+            className="font-display text-xl font-bold tracking-tight sm:text-2xl"
           />
-        </Panel>
-        <Panel title="Score">
-          <p className="font-display text-2xl font-bold tabular-nums text-ink sm:text-3xl">
+        </Metric>
+        <Metric label="Score">
+          <span className="font-display text-xl font-bold tabular-nums text-ink sm:text-2xl">
             {snapshot.score}
-          </p>
-        </Panel>
-        <Panel title="Chain">
-          <p className="font-display text-2xl font-bold text-ink sm:text-3xl">
+          </span>
+        </Metric>
+        <Metric label="Chain">
+          <span className="font-display text-xl font-bold tabular-nums text-ink sm:text-2xl">
             {snapshot.solvedCount}
             <span className="text-dim">/{snapshot.totalCount}</span>
-          </p>
-        </Panel>
-        <Panel title="Status">
-          <div className="flex h-full items-center">
-            {snapshot.finished ? (
-              <StatusPill tone="ok" label="run complete" />
-            ) : roundEnded ? (
-              <StatusPill tone="muted" label="round ended" staticDot />
-            ) : snapshot.currentPuzzleCode ? (
-              <StatusPill tone="warn" label={`active // ${snapshot.currentPuzzleCode}`} />
-            ) : (
-              <StatusPill tone="muted" label="idle" staticDot />
-            )}
-          </div>
-        </Panel>
+          </span>
+        </Metric>
+        <Metric label="Current link">
+          {snapshot.finished ? (
+            <StatusPill tone="ok" label="run complete" />
+          ) : roundEnded ? (
+            <StatusPill tone="muted" label="round ended" staticDot />
+          ) : snapshot.currentPuzzleCode ? (
+            <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-caution">
+              {snapshot.currentPuzzleCode}
+            </span>
+          ) : (
+            <StatusPill tone="muted" label="idle" staticDot />
+          )}
+        </Metric>
       </div>
 
       {/* banners */}
@@ -413,7 +435,7 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
                   <button
                     type="button"
                     disabled={locked}
-                    onClick={() => setSelectedCode(puzzle.code)}
+                    onClick={() => setPickedCode(puzzle.code)}
                     className={cn(
                       "flex h-full w-full items-start gap-2 px-2.5 py-2.5 text-left transition-colors",
                       "lg:items-center lg:gap-3 lg:px-4 lg:py-3",
@@ -453,8 +475,27 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
         </div>
       </div>
 
-      {/* Round 2 final verdict */}
-      {snapshot.vote ? <VotePanel vote={snapshot.vote} /> : null}
+      {/*
+        The verdict no longer lives here. It is about the suspects, so it sits on
+        the Suspects tab — but a unit that has just broken the final code must be
+        told where to take it, or the round ends with nobody voting.
+      */}
+      {snapshot.vote && !snapshot.vote.submitted ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-alert/40 bg-alert/[0.07] px-4 py-3.5">
+          <p className="flex min-w-0 items-start gap-2.5 font-mono text-[12px] leading-relaxed text-alert">
+            <Gavel className="mt-0.5 h-4 w-4 shrink-0" />
+            {snapshot.vote.unlocked
+              ? "The culprit vote is open. It is on the Suspects tab — one vote, irreversible."
+              : "The culprit vote unseals when the final code breaks. Dossiers are on the Suspects tab."}
+          </p>
+          <Link
+            href={`/team/${snapshot.round.code === "ROUND_1" ? "round-1" : "round-2"}/suspects`}
+            className={buttonClasses({ variant: "ghost", size: "sm" })}
+          >
+            Suspects
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

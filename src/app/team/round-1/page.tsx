@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { requireTeam } from "@/lib/auth/guards";
-import { getTeamRoundSnapshot } from "@/server/game/engine";
-import { RoundShell, RoundStateView } from "@/components/game/round-states";
+import { AnswersTab } from "@/components/team/participant-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +7,14 @@ export const metadata: Metadata = {
   title: "Round 01 — The Breach",
 };
 
-export default async function RoundOnePage() {
-  const { team } = await requireTeam();
-  const result = await getTeamRoundSnapshot(team.id, team.name, "ROUND_1");
-
+export default function RoundOneAnswersPage() {
   return (
-    <RoundShell eyebrow="Round 01 // 60 units // top 15 advance" title="THE BREACH" teamName={team.name}>
-      <RoundStateView result={result} />
-    </RoundShell>
+    <AnswersTab
+      round="ROUND_1"
+      meta={{
+        eyebrow: "Round 01 // 60 units // top 15 advance",
+        title: "THE BREACH",
+      }}
+    />
   );
 }

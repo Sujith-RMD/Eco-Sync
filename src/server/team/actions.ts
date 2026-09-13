@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireTeam } from "@/lib/auth/guards";
-import { castVote, submitAnswer, useHint } from "@/server/game/engine";
+import { castVote, claimHint, submitAnswer } from "@/server/game/engine";
 import type { SubmitActionState, VoteActionState } from "@/types/game";
 import type { RoundCode } from "@/types/game";
 
@@ -66,7 +66,7 @@ export interface HintActionResult {
 }
 
 /** Claim the next hint for a puzzle. Returns the hint payload on success. */
-export async function useHintAction(
+export async function requestHintAction(
   roundCode: RoundCode,
   puzzleCode: string,
 ): Promise<HintActionResult> {
@@ -79,7 +79,7 @@ export async function useHintAction(
     return { ok: false, error: "Malformed request." };
   }
 
-  const result = await useHint({ teamId: team.id, roundCode, puzzleCode });
+  const result = await claimHint({ teamId: team.id, roundCode, puzzleCode });
   revalidatePath(roundPath(roundCode));
   return result;
 }

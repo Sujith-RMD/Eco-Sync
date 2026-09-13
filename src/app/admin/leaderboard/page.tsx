@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth/guards";
+import { GAME_CONSTANTS } from "@/server/game/constants";
 import {
   computeRound1Standings,
   publicLeaderboard,
@@ -148,7 +149,7 @@ export default async function AdminLeaderboardPage() {
                         {row.score}
                       </td>
                       <td className="hidden px-3 py-2 text-right tabular-nums text-mist sm:table-cell">
-                        {row.solvedCount}/12
+                        {row.solvedCount}/{GAME_CONSTANTS.round2.puzzleCount}
                       </td>
                       <td className="hidden px-3 py-2 text-right tabular-nums text-mist md:table-cell">
                         {fmt(row.finishedAt)}
