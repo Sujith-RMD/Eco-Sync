@@ -1,8 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import type { PoolConfig } from "pg";
 import { Pool } from "pg";
 import * as schema from "./schema";
-import { SUPABASE_ROOT_CA_PEM } from "./supabase-root-ca";
+import { buildDbConnectionConfig } from "./connection-config";
 
 /**
  * `||`, not `??`: Vercel's first-party Postgres publishes its endpoint as
@@ -20,31 +19,13 @@ if (!databaseUrl) {
 }
 
 /**
- * TLS trust for the database socket.
- *
- * Node ships its own CA store instead of using the operating system's, and
- * Supabase's poolers terminate TLS with a chain rooted in "Supabase Root 2021
- * CA", which Node does not carry and Windows does. Because node-postgres treats
- * `?sslmode=require` as full verification, every hosted query failed with
- * SELF_SIGNED_CERT_IN_CHAIN. Pinning that one public root keeps the socket
- * authenticated; turning verification off would have "worked" and silently
- * accepted any man in the middle between a serverless function and the ledger.
- *
- * Any other host is left alone so the connection string keeps governing TLS:
- * forcing `ssl` here would break local development, where Postgres usually
- * offers no TLS at all.
+ * TLS trust is resolved in ./connection-config, not here: node-postgres lets a
+ * connection string's `sslmode` override an explicit `ssl` option, so pinning
+ * Supabase's root requires removing that parameter. Getting this wrong fails
+ * every query with SELF_SIGNED_CERT_IN_CHAIN, which is why it lives in a pure,
+ * unit-tested module instead of inline.
  */
-function sslOptions(connectionString: string): PoolConfig["ssl"] {
-  let hostname = "";
-  try {
-    hostname = new URL(connectionString).hostname;
-  } catch {
-    return undefined;
-  }
-  return /\.supabase\.(co|com)$/i.test(hostname)
-    ? { ca: SUPABASE_ROOT_CA_PEM }
-    : undefined;
-}
+const connection = buildDbConnectionConfig(databaseUrl);
 
 const globalForDb = globalThis as typeof globalThis & {
   __ecosyncDbPool?: Pool;
@@ -57,9 +38,8 @@ const globalForDb = globalThis as typeof globalThis & {
 export const pool =
   globalForDb.__ecosyncDbPool ??
   new Pool({
-    connectionString: databaseUrl,
+    ...connection,
     max: 10,
-    ssl: sslOptions(databaseUrl),
   });
 
 if (process.env.NODE_ENV !== "production") {
