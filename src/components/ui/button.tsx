@@ -21,7 +21,7 @@ export function buttonClasses(options?: ButtonStyleOptions) {
     size === "md" && "px-5 py-2.5 text-[12.5px]",
     size === "lg" && "px-7 py-3.5 text-[13px]",
     variant === "primary" &&
-      "bg-acid text-abyss-950 hover:shadow-[0_0_34px_-6px_rgba(61,255,178,0.65)] hover:brightness-110 active:brightness-95",
+      "bg-acid text-abyss-950 hover:shadow-[0_0_34px_-6px_color-mix(in_oklab,var(--color-acid)_65%,transparent)] hover:brightness-110 active:brightness-95",
     variant === "ghost" &&
       "border border-line bg-abyss-900/50 text-mist hover:border-acid/60 hover:text-acid",
     variant === "danger" &&

@@ -17,7 +17,7 @@ export function Backdrop() {
       {/* CRT scanlines */}
       <div className="absolute inset-0 bg-scanlines opacity-70" />
       {/* vignette */}
-      <div className="absolute inset-0 [background:radial-gradient(120%_95%_at_50%_8%,transparent_42%,rgba(2,10,7,0.92)_100%)]" />
+      <div className="absolute inset-0 [background:radial-gradient(120%_95%_at_50%_8%,transparent_42%,color-mix(in_oklab,var(--color-abyss-950)_92%,transparent)_100%)]" />
     </div>
   );
 }

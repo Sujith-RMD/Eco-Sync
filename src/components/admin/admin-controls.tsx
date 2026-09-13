@@ -225,7 +225,8 @@ function RestartForm() {
           Restart event — wipe and replay
         </Button>
         <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-dim sm:tracking-[0.18em]">
-          Guarded: refused while a round is live. End the round first.
+          Guarded: refused while a round is live — end it first. Also releases
+          any unit paused for too many wrong codes.
         </p>
         <ActionMessage state={state} />
       </form>

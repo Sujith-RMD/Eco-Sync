@@ -98,7 +98,7 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
                 className={cn(
                   "group flex items-start gap-3 border px-4 py-3.5 text-left transition-all duration-150",
                   isSelected
-                    ? "border-alert/60 bg-alert/10 shadow-[0_0_24px_-8px_rgba(255,84,112,0.5)]"
+                    ? "border-alert/60 bg-alert/10 shadow-[0_0_24px_-8px_color-mix(in_oklab,var(--color-alert)_50%,transparent)]"
                     : "border-line bg-abyss-950/50 hover:border-mist/50",
                 )}
               >

@@ -14,6 +14,7 @@ import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { buttonClasses } from "@/components/ui/button";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { AutoRefresh } from "@/components/game/timer";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,16 @@ export default async function LobbyPage() {
   return (
     <div className="relative flex min-h-dvh flex-col">
       <Backdrop />
+      {/*
+        The lobby is where every unit waits for the operator to open a round, so
+        it polls for that status flip. Cadence is deliberately slower than the
+        round console's 8s: this is the one screen all sixty handsets sit on at
+        the same time, and at 8s that alone is 7.5 server renders per second
+        against a measured single-process ceiling near 10. Twelve seconds keeps
+        about half the capacity free and still surfaces a round start within one
+        glance. AutoRefresh is visibility-gated, so a locked phone polls nothing.
+      */}
+      <AutoRefresh intervalMs={12_000} />
       <Topbar>
         <StatusPill tone="ok" label={`unit // ${team.name}`} />
         <LogoutButton />
@@ -82,7 +93,8 @@ export default async function LobbyPage() {
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-mist sm:text-base">
           Choose your perimeter. The server keeps official time and score for
-          every move you make — refresh freely, state survives.
+          every move you make, and this board updates itself when a round opens
+          — refresh freely, state survives.
         </p>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3">

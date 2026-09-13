@@ -6,7 +6,14 @@ import { db } from "@/db";
 import { admins, teams } from "@/db/schema";
 import { DUMMY_PASSWORD_HASH, verifyPassword } from "@/lib/auth/password";
 import { createSession, destroySession, getSessionView } from "@/lib/auth/session";
-import { consumeRateLimit } from "@/lib/security/rate-limit";
+import {
+  guardAdminSignIn,
+  guardTeamSignIn,
+  noteAdminSignInSuccess,
+  noteTeamSignInSuccess,
+  recordAdminSignInFailure,
+  recordTeamSignInFailure,
+} from "@/lib/security/auth-throttle";
 import { getClientIp, getUserAgent } from "@/lib/security/request";
 import { adminLoginSchema, teamLoginSchema } from "@/lib/validation/auth";
 import { logAudit } from "@/server/audit/log";
@@ -33,11 +40,23 @@ export async function loginTeam(
   const ip = await getClientIp();
   const userAgent = await getUserAgent();
 
-  const gate = consumeRateLimit(`login:team:${ip ?? "unknown"}`, 10, 5 * 60_000);
+  // Only failures are counted, and the tight budget belongs to the credential —
+  // so sixty units signing in through one venue egress address cannot exhaust
+  // each other's allowance, which a per-IP attempt counter did.
+  const gate = await guardTeamSignIn(teamName, ip);
   if (!gate.allowed) {
+    await logAudit({
+      actorType: "TEAM",
+      actorId: null,
+      action: "auth.login.denied",
+      entity: "team",
+      entityId: teamName,
+      meta: { reason: "throttled", retryAfterSeconds: gate.retryAfterSeconds },
+      ip,
+    });
     return {
       ok: false,
-      message: `Too many attempts. Stand down for ${gate.retryAfterSeconds}s.`,
+      message: `Too many failed attempts. Stand down for ${gate.retryAfterSeconds}s.`,
     };
   }
 
@@ -81,6 +100,7 @@ export async function loginTeam(
       },
       ip,
     });
+    await recordTeamSignInFailure(teamName, ip);
     return { ok: false, message: DENIED_TEAM };
   }
 
@@ -94,6 +114,8 @@ export async function loginTeam(
   });
 
   await createSession({ subject: "TEAM", teamId: team.id, ip, userAgent });
+  // This unit is proven; drop its typo history so it starts the round clean.
+  await noteTeamSignInSuccess(teamName);
   redirect("/lobby");
 }
 
@@ -113,11 +135,20 @@ export async function loginAdmin(
   const ip = await getClientIp();
   const userAgent = await getUserAgent();
 
-  const gate = consumeRateLimit(`login:admin:${ip ?? "unknown"}`, 8, 10 * 60_000);
+  const gate = await guardAdminSignIn(username, ip);
   if (!gate.allowed) {
+    await logAudit({
+      actorType: "ADMIN",
+      actorId: null,
+      action: "auth.admin_login.denied",
+      entity: "admin",
+      entityId: username,
+      meta: { reason: "throttled", retryAfterSeconds: gate.retryAfterSeconds },
+      ip,
+    });
     return {
       ok: false,
-      message: `Too many attempts. Stand down for ${gate.retryAfterSeconds}s.`,
+      message: `Too many failed attempts. Stand down for ${gate.retryAfterSeconds}s.`,
     };
   }
 
@@ -153,6 +184,7 @@ export async function loginAdmin(
       meta: { reason: !admin ? "unknown_admin" : "bad_credentials" },
       ip,
     });
+    await recordAdminSignInFailure(username, ip);
     return { ok: false, message: DENIED_ADMIN };
   }
 
@@ -166,6 +198,7 @@ export async function loginAdmin(
   });
 
   await createSession({ subject: "ADMIN", adminId: admin.id, ip, userAgent });
+  await noteAdminSignInSuccess(username);
   redirect("/admin");
 }
 

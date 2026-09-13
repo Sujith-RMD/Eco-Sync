@@ -6,6 +6,7 @@ import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
+  authThrottle,
   culpritVotes,
   hintUsages,
   puzzleAttempts,
@@ -77,7 +78,14 @@ export async function seedEventAction(
     return { status: "error", message: "System is not initialized. Apply the database schema first." };
   }
 
-  const gate = consumeRateLimit(`admin:seed:${ip ?? "unknown"}`, 5, 10 * 60_000);
+  // Keyed to whoever is authenticated (the address is useless here: the whole
+  // venue shares one) and generous, because the failure it guards against —
+  // hammering bootstrap — is already gated by admin auth and the phrase.
+  const gate = consumeRateLimit(
+    `admin:seed:${actorId ?? ip ?? "first-run"}`,
+    8,
+    10 * 60_000,
+  );
   if (!gate.allowed) {
     return { status: "error", message: `Too many attempts. Retry in ${gate.retryAfterSeconds}s.` };
   }
@@ -199,14 +207,6 @@ export async function restartEventAction(
   const { admin } = await requireAdmin();
   const ip = await getClientIp();
 
-  const gate = consumeRateLimit(`admin:restart:${ip ?? "unknown"}`, 3, 10 * 60_000);
-  if (!gate.allowed) {
-    return {
-      status: "error",
-      message: `Too many attempts. Retry in ${gate.retryAfterSeconds}s.`,
-    };
-  }
-
   if (!confirmationOk(formData, RESTART_PHRASE)) {
     return {
       status: "error",
@@ -224,6 +224,18 @@ export async function restartEventAction(
     return {
       status: "error",
       message: `${label} is still live. End it first, then restart.`,
+    };
+  }
+
+  // Double-fire guard, and deliberately the LAST check: a mistyped phrase or a
+  // round that is still live is a safe refusal, not abuse, so neither may burn
+  // this budget. Keyed to the operator rather than the address — every phone
+  // and laptop in the venue leaves through one egress IP.
+  const gate = consumeRateLimit(`admin:restart:${admin.id}`, 3, 10 * 60_000);
+  if (!gate.allowed) {
+    return {
+      status: "error",
+      message: `Too many restarts. Retry in ${gate.retryAfterSeconds}s.`,
     };
   }
 
@@ -247,6 +259,11 @@ export async function restartEventAction(
     await tx.delete(scoreEvents);
     await tx.delete(roundParticipations);
     await tx.delete(sessions).where(eq(sessions.subject, "TEAM"));
+    // A reset also releases any unit paused by the sign-in throttle, so an
+    // operator can always unstick the room from the same button.
+    const throttled = await tx
+      .delete(authThrottle)
+      .returning({ key: authThrottle.key });
     await tx
       .update(rounds)
       .set({ status: "PENDING", startedAt: null, endsAt: null, endedAt: null });
@@ -258,6 +275,7 @@ export async function restartEventAction(
       progress: progress[0]?.n ?? 0,
       ledger: ledger[0]?.n ?? 0,
       participations: participations[0]?.n ?? 0,
+      signInsReleased: throttled.length,
     };
   });
 
@@ -321,6 +339,8 @@ export async function purgeEventAction(
     await tx.delete(puzzles);
     await tx.delete(rounds);
     await tx.delete(sessions).where(eq(sessions.subject, "TEAM"));
+    // Credentials are going away with the teams, so their throttles must too.
+    await tx.delete(authThrottle);
     await tx.delete(teams);
   });
 

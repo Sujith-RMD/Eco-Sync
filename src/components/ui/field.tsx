@@ -39,7 +39,7 @@ export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
       className={cn(
         "w-full min-w-0 border border-line bg-abyss-950/80 px-3.5 py-3 font-mono text-base tracking-wide text-ink caret-acid sm:px-4 sm:text-sm",
         "placeholder:text-dim/60 transition-all duration-150",
-        "focus:border-acid/70 focus:shadow-[0_0_0_3px_rgba(61,255,178,0.13)] focus:outline-none",
+        "focus:border-acid/70 focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-acid)_13%,transparent)] focus:outline-none",
         props.className,
       )}
     />
