@@ -4,7 +4,6 @@ import { ChevronRight, Search } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/guards";
 import { adminTeamsOverview } from "@/server/game/engine";
 import { GAME_CONSTANTS } from "@/server/game/constants";
-import { cn } from "@/lib/utils/cn";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { StatusPill } from "@/components/ui/status-pill";
 import { TextInput } from "@/components/ui/field";

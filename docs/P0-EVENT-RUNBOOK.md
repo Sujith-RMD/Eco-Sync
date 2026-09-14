@@ -20,15 +20,49 @@ cannot be confused.)
 | Fact | Evidence |
 | --- | --- |
 | Production URL | `https://eco-sync-mu.vercel.app` (the short `eco-sync.vercel.app` belongs to a **different tenant** — never print it; a team typing it lands on a stranger's login page) |
-| App is up and reaches its database | `GET /api/health` → `200 {"ok":true,"db":{"status":"up","latencyMs":114}}` |
+| App is up and reaches its database | `GET /api/health` → `200 {"ok":true,"db":{"status":"up","latencyMs":35}}` |
 | The redesigned participant UI is **already deployed** | `GET /team/round-1/storyline` → 307 → `/login` (route exists; a 404 would mean undeployed) |
 | Leaderboard lockdown is **live** | `GET /leaderboard` → 307 → `/login` |
 | Public standings feed is gone from production | `GET /api/leaderboard` → 404 |
-| Round 2 content is correct **in the local database** | `db/verify-round-2.sql`: 8/8 rows match, chain contiguous, 850 points, one FINAL_CODE |
-| Production Round 2 content | **unverified from here** — step 3 |
+| **Local** `app_db` (`127.0.0.1:5432`) Round 2 | ✅ 8/8 rows match the supplied questions, chain contiguous 1–8, 850 points, one `FINAL_CODE`, `puzzles_needing_arming = 0` |
+| Supabase project `ijsndlhcaxpzhugtoxnk` Round 2 | ✅ identical 8/8 result and identical `round_1_fingerprint` |
+| Which database the **deployed** site reads | **unconfirmed** — see §0a |
 
-Not yet in production (this changeset, uncommitted): the fail-closed open-round
-guard, the pool cap, and the two SQL files.
+---
+
+## 0a. Which database are you connected to? Read this before any write
+
+Three Postgres endpoints are in play, and until this run two of them held **different
+content revisions**. A repair applied to the wrong one reports success and changes
+nothing — which is exactly how `1 link un-armed: S7 (#6/8)` survived being "fixed".
+
+| Endpoint | What it is | Round 2 content |
+| --- | --- | --- |
+| `127.0.0.1:5432/app_db` | local dev / rehearsal, from `.env` | supplied 8-row chain, armed |
+| Supabase `ijsndlhcaxpzhugtoxnk` | the project the pasted Vercel env dump names | supplied 8-row chain, armed |
+| whatever the **deployed** site reads | unconfirmed | — |
+
+Both known endpoints now agree, so the un-armed warning is gone from both. But the
+deployed site reaches a database identified only by Vercel's own server-side Postgres
+variable — and `DATABASE_URL` **wins over** `DATABASE_POSTGRES_URL` (§7b). If Vercel
+carries a plain `DATABASE_URL` aimed at a third project, that project is the one that
+still needs arming.
+
+**Identify before you write.** Paste `db/identify-content-revision.sql` (read-only) into
+the SQL editor of whichever project you are about to touch. It prints the database name,
+both puzzle counts, the full Round 2 chain with answer lengths and placeholder flags, the
+play-data counts, and a verdict — `SUPPLIED revision — db/arm-s7.sql is safe here` or
+`RETIRED revision — do NOT run db/arm-s7.sql here`.
+
+That warning is not theoretical. `db/arm-s7.sql` matches on `code = 'S7'` with **no
+`order_index` constraint**, and none of its guards inspect the *old* value — they validate
+only the new payload. On the supplied revision `S7` is the QR puzzle at position 6 and the
+script is correct. On the retired 11-row revision `S7` was `WATER DATA — IV` at position 9,
+and the same script would have silently overwritten a real puzzle's answer.
+
+The same trap is why `db/verify-round-2.sql` is the right first command: it compares
+against the supplied questions, so on the wrong revision it says so instead of agreeing
+with itself.
 
 ---
 
@@ -68,7 +102,8 @@ Same file, already run in step 2. Read the fifth result tab's verdict line:
 * `ROUND 2 CONTENT IS WRONG — apply db/round-2-content.sql` → continue to step 5.
 * Eight rows you do not recognise, or a count that is not 8 → the deployment you are
   connected to is not the one you think. Confirm the project reference in the
-  dashboard's own header before running anything that writes.
+  dashboard's own header before running anything that writes, and see §0a — a mismatch
+  here is how the wrong database gets repaired.
 
 ---
 
@@ -102,7 +137,8 @@ Then re-run `db/verify-round-2.sql` and expect, precisely:
 * all 8 rows `ok = t`, `answers_wrong = 0`, `all_match = t`, verdict `MATCHES`
 * `chain_contiguous = t`, `puzzles = 8`, `total_points = 850`
 * `final_code_puzzles = 1`, `last_puzzle_code = LAST`
-* `puzzles_needing_arming = 1` ← correct at this point; S7 is intentionally un-armed
+* `puzzles_needing_arming = 0` ← S7 is seeded armed (`DELETED`); a `1` here means the
+  database is on the pre-arming revision of this file and step 6 still applies
 * `round_1_fingerprint` **unchanged** from step 2
 
 ---
@@ -307,3 +343,8 @@ the same round the participants cannot see.
 5. Confirmation that rotating the service-role key and JWT secret is wanted *now* —
    they are unused by the app, so removing them from the project is safe and reduces
    what can leak again (step 7a).
+6. **Which Supabase project the deployed site actually reads** (§0a). Both endpoints we
+   can reach are correct as of this run, but if Vercel carries a plain `DATABASE_URL`
+   aimed at a third project, that one is still un-armed and the deck will refuse to open
+   Round 02. One paste of `db/identify-content-revision.sql` into the right dashboard
+   settles it in seconds.

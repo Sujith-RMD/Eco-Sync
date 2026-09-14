@@ -36,6 +36,3 @@ export const GAME_CONSTANTS = {
     lockoutSeconds: 30,
   },
 } as const;
-
-/** Absolute UTC cap on how long the server tolerates a submission past end. */
-export const ROUND_GRACE_PERIOD_MS = 0;

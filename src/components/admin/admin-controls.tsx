@@ -29,6 +29,7 @@ import {
   type SeedActionState,
 } from "@/types/admin";
 import type { RoundCode, RoundStatus } from "@/types/game";
+import { GAME_CONSTANTS } from "@/server/game/constants";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
@@ -357,13 +358,13 @@ export function AdminControls({
           code="ROUND_1"
           label="Round 01"
           status={statusOf("ROUND_1")}
-          meta="40:00 window · 7 links · top 15 advance"
+          meta={`${GAME_CONSTANTS.round1.durationMinutes}:00 window · ${GAME_CONSTANTS.round1.puzzleCount} links · top ${GAME_CONSTANTS.round1.qualifyingTeams} advance`}
         />
         <RoundControlCard
           code="ROUND_2"
           label="Round 02"
           status={statusOf("ROUND_2")}
-          meta="75:00 window · 12 links · vote unseals at the end"
+          meta={`${GAME_CONSTANTS.round2.durationMinutes}:00 window · ${GAME_CONSTANTS.round2.puzzleCount} links · vote unseals at the end`}
         />
         <Panel title="Qualification">
           <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">

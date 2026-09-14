@@ -36,11 +36,6 @@ export function wrongPenaltyForAttempt(
   return Math.min(perAttemptPenalty, remaining);
 }
 
-/** Server lockout expiry after a wrong answer. */
-export function lockoutExpiry(nowMs: number, lockoutSeconds: number): Date {
-  return new Date(nowMs + lockoutSeconds * 1000);
-}
-
 /* -------------------------------------------------------------------------- */
 /* Time bonus (spec §7)                                                        */
 /* -------------------------------------------------------------------------- */

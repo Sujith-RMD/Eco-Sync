@@ -2,17 +2,22 @@
 -- Soft reset of both rounds back to PENDING (rehearsal helper).
 --
 -- WHY THIS EXISTS: the engine's round state machine is deliberately one-way
--- (PENDING -> ACTIVE -> ENDED, see src/server/game/engine.ts:844/881) and the
--- command deck offers no restart control. The only in-app reset is
--- "Purge event data", which also destroys the teams and regenerates all 60
--- access codes. When the rounds were opened and closed with no team play on
--- the board, this script returns the deck to Start/PENDING and preserves the
--- teams, their access codes and the puzzle catalogue.
+-- (PENDING -> ACTIVE -> ENDED, see the one-way transition guards in
+-- src/server/game/engine.ts). The command deck's everyday reset is now RESTART
+-- (restartEventAction), which supersedes this script: it clears the same two
+-- things AND the ledger, attempts, hints and verdicts, releases the sign-in
+-- throttle, drops team sessions, refuses while a round is still ACTIVE, is
+-- rate-limited, and writes an event.restart audit row.
+--
+-- So treat this script as the fallback for when the deck cannot be reached --
+-- operator locked out, deployment down, no admin session. Prefer RESTART when
+-- the deck is up.
 --
 -- WHAT IT CLEARS: round_participations (Round 01 final rankings + the Round 02
 -- qualified roster written by "Qualify top 15") and the started_at/ended_at
 -- stamps on the two round rows. Standings are derived from the score ledger,
--- so with an empty ledger nothing else has to change.
+-- so with an empty ledger nothing else has to change. The teams, their access
+-- codes and the puzzle catalogue are preserved.
 --
 -- SAFETY: aborts before committing if any score_events or team_puzzle_progress
 -- rows exist. That is the point at which a soft reset would silently rewrite

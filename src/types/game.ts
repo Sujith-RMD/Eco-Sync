@@ -12,13 +12,6 @@ export type PuzzleKind = "DIGITAL" | "PHYSICAL_CHECKPOINT" | "FINAL_CODE";
 
 export type PuzzleStatus = "LOCKED" | "UNLOCKED" | "SOLVED";
 
-export type ScoreEventType =
-  | "PUZZLE_SOLVED"
-  | "HINT_USED"
-  | "WRONG_ANSWER"
-  | "TIME_BONUS"
-  | "MANUAL_ADJUSTMENT";
-
 /* -------------------------------------------------------------------------- */
 /* Server-computed views (all timestamps ISO-8601 strings)                     */
 /* -------------------------------------------------------------------------- */
