@@ -38,7 +38,7 @@ export function TeamLoginForm() {
       ) : null}
 
       <Field
-        label="Unit designation"
+        label="Team ID"
         htmlFor="teamName"
         hint="Issued at check-in. Case-insensitive."
       >
@@ -50,7 +50,7 @@ export function TeamLoginForm() {
           maxLength={80}
           autoComplete="off"
           spellCheck={false}
-          placeholder="e.g. NIGHT-OWL-07"
+          placeholder="e.g. TEAM#8210"
         />
       </Field>
 

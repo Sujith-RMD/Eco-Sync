@@ -134,7 +134,7 @@ async function main() {
   /* seed ----------------------------------------------------------------- */
   console.log("SEED");
   const seed = await seedEvent({ adminUsername: "smoke-op", adminPassword: "dummy-passphrase-123" });
-  expect(seed.teams.length === 60, "seeded 60 units");
+  expect(seed.teams.length === 61, "seeded 61 teams");
   // Derived from the catalogue, not literals: a hardcoded count is what let
   // this assertion sit at 11 for a Round 2 that had become 8 links.
   expect(
@@ -144,9 +144,9 @@ async function main() {
   );
   const admin = await db.query.admins.findFirst({ where: eq(admins.username, "smoke-op") });
   expect(Boolean(admin), "operator account created");
-  const t1 = (await db.query.teams.findFirst({ where: eq(teams.name, "UNIT-01") }))!;
-  const t60 = (await db.query.teams.findFirst({ where: eq(teams.name, "UNIT-60") }))!;
-  expect(Boolean(t1) && Boolean(t60), "unit accounts queryable");
+  const t1 = (await db.query.teams.findFirst({ where: eq(teams.name, "TEAM#8210") }))!;
+  const t60 = (await db.query.teams.findFirst({ where: eq(teams.name, "TEAM#9312") }))!;
+  expect(Boolean(t1) && Boolean(t60), "team accounts queryable");
 
   /* round 1 --------------------------------------------------------------- */
   console.log("ROUND 01");
@@ -257,7 +257,7 @@ async function main() {
   expect(votes.total === 1, "vote ledger holds exactly one verdict");
 
   const standings = await computeRound1Standings();
-  expect(standings.length === 60, "standings cover all 60 units");
+  expect(standings.length === 61, "standings cover all 61 teams");
 
   console.log(`\n— RESULT: ${passed} passed, ${failed} failed —`);
   if (failed > 0) process.exitCode = 1;

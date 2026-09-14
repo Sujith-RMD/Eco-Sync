@@ -17,7 +17,7 @@
  *   npx tsx scripts/seed-event.ts
  *
  * Credentials are read from the environment only — never hardcoded, and never
- * echoed to stdout. The 60 generated unit access codes are stored in the DB as
+ * echoed to stdout. The generated team access codes are stored in the DB as
  * scrypt hashes and cannot be recovered afterwards, so they are written once to
  * a local CSV (gitignored).
  */
@@ -73,11 +73,11 @@ async function main(): Promise<void> {
   requireConfirmation();
   const { username, password } = requireOperatorCredentials();
 
-  console.log("Seeding event: rounds + puzzle catalogue + 60 units + operator…");
+  console.log("Seeding event: rounds + puzzle catalogue + rostered teams + operator…");
   const result = await seedEvent({ adminUsername: username, adminPassword: password });
 
   const csv = [
-    "unit,access_code",
+    "team_id,access_code",
     ...result.teams.map((team) => `${team.name},${team.accessCode}`),
   ].join("\n");
 
@@ -88,14 +88,14 @@ async function main(): Promise<void> {
 
   console.log("✓ Event initialized.");
   console.log(`  Operator ID : ${result.adminUsername}`);
-  console.log(`  Units       : ${result.teamCount}`);
+  console.log(`  Teams       : ${result.teamCount}`);
   console.log(
     `  Puzzles     : ${result.puzzleCounts.round1} (Round 01) + ` +
       `${result.puzzleCounts.round2} (Round 02)`,
   );
   console.log(`  Codes CSV   : ${filePath}`);
   console.log("\n  Sign in at /admin/login with the operator ID and passphrase.");
-  console.log("  Unit codes appear only in the CSV above — they are unrecoverable.");
+  console.log("  Team codes appear only in the CSV above — they are unrecoverable.");
 }
 
 main()

@@ -7,7 +7,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { buttonClasses } from "@/components/ui/button";
 
 const PARAMETERS = [
-  { label: "Field", value: "60", sub: "units deployed" },
+  { label: "Field", value: "61", sub: "units deployed" },
   { label: "Round 01", value: "40:00", sub: "top 15 advance" },
   { label: "Round 02", value: "75:00", sub: "3 units prevail" },
   { label: "Verdict", value: "Sealed", sub: "culprit vote" },
@@ -18,7 +18,7 @@ const TICKER_ITEMS = [
   "Chain of custody active",
   "Evidence first",
   "Trust the proof",
-  "60 units deployed",
+  "61 units deployed",
   "The Breach protocol",
 ] as const;
 

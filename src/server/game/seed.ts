@@ -9,7 +9,30 @@ import { GAME_CONSTANTS } from "@/server/game/constants";
 import { ROUND1_PUZZLES, ROUND2_PUZZLES } from "@/server/game/catalogue";
 import { normalizeAnswer } from "@/server/game/rules";
 
-const TEAM_COUNT = 60;
+/**
+ * Check-in roster, in sheet order. `name` is the login identifier issued at the
+ * desk — the real TEAM#XXXX designation, not a placeholder. The order pairs each
+ * unit with the access code printed beside it, so it must not be reshuffled.
+ */
+const TEAM_ROSTER = [
+  "TEAM#8210", "TEAM#9303", "TEAM#5376", "TEAM#3481", // AB5-101
+  "TEAM#8938", "TEAM#3768", "TEAM#1259", "TEAM#1996", // AB5-102
+  "TEAM#7505", "TEAM#8824", "TEAM#3555", "TEAM#8197", // AB5-107
+  "TEAM#6257", "TEAM#2524", "TEAM#1360", "TEAM#4802", // AB5-109
+  "TEAM#5594", "TEAM#1379", "TEAM#4217", "TEAM#6940", // AB5-201
+  "TEAM#4948", "TEAM#8248", "TEAM#7302", "TEAM#4877", // AB5-202
+  "TEAM#9776", "TEAM#1924", "TEAM#2292", "TEAM#7580", // AB5-203
+  "TEAM#9023", "TEAM#4320", "TEAM#2120", "TEAM#6667", // AB5-204
+  "TEAM#8254", "TEAM#1367", "TEAM#6141", "TEAM#1263", // AB5-205
+  "TEAM#8829", "TEAM#8041", "TEAM#2566", "TEAM#3714", // AB5-206
+  "TEAM#8275", "TEAM#7063", "TEAM#1571", "TEAM#9174", // AB5-207
+  "TEAM#5698", "TEAM#9561", "TEAM#7129", "TEAM#5050", // AB5-208
+  "TEAM#3986", "TEAM#4584", "TEAM#4500", "TEAM#2927", // AB5-209
+  "TEAM#1899", "TEAM#3187", "TEAM#9180", "TEAM#3038", // AB5-210
+  "TEAM#9298", "TEAM#5349", "TEAM#6764", "TEAM#9312", // AB5-211
+  "TEAM#5312",                                        // AB5-212
+];
+
 /** Alphabet avoids ambiguous glyphs (0/O, 1/I/L). */
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
@@ -32,7 +55,7 @@ export interface SeedOutcome {
 /**
  * One-shot, idempotent event bootstrap:
  *   rounds (R1 40min / R2 75min) → full supplied puzzle catalogue →
- *   60 teams with individual access codes → one admin operator.
+ *   every rostered team with an individual access code → one admin operator.
  * Throws EVENT_ALREADY_SEEDED if rounds already exist.
  */
 export async function seedEvent(input: {
@@ -46,8 +69,8 @@ export async function seedEvent(input: {
     throw new Error("EVENT_ALREADY_SEEDED");
   }
 
-  const teamSeeds = Array.from({ length: TEAM_COUNT }, (_, index) => ({
-    name: `UNIT-${String(index + 1).padStart(2, "0")}`,
+  const teamSeeds = TEAM_ROSTER.map((name) => ({
+    name,
     accessCode: generateAccessCode(),
   }));
 
