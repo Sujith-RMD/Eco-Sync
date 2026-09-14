@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   describeUnarmed,
   isUnarmedAnswer,
+  UNARMED_SENTINEL,
 } from "@/server/game/unarmed";
 import {
   ROUND1_PUZZLES,
   ROUND2_PUZZLES,
-  UNARMED_SENTINEL,
 } from "@/server/game/catalogue";
 
 /**
@@ -15,7 +15,8 @@ import {
  * A placeholder answer is not a cosmetic gap: the chain unseals `orderIndex + 1`
  * by exact match, so one un-armed link strands everything behind it, including
  * the final code and the culprit vote. The guard therefore treats *any*
- * `__LIKE_THIS__` value as un-armed, not only the current marker.
+ * `__LIKE_THIS__` value as un-armed, not only the current marker — and an empty
+ * answer too, since it is equally unpassable from the UI.
  */
 
 const unarmedIn = (rows: typeof ROUND1_PUZZLES) =>
@@ -38,7 +39,17 @@ describe("isUnarmedAnswer", () => {
     }
     expect(isUnarmedAnswer("__UNARMED")).toBe(false);
     expect(isUnarmedAnswer("UNARMED__")).toBe(false);
-    expect(isUnarmedAnswer("")).toBe(false);
+  });
+
+  it("treats an empty answer as un-armed, because nobody could ever type it", () => {
+    // This assertion used to read `toBe(false)`, which left the guard blind to
+    // the one input it could not otherwise catch. An empty expected answer is
+    // not a free solve: the submit action rejects `answer.length === 0`, so the
+    // link is unpassable and everything behind it is stranded — precisely the
+    // failure the guard exists to prevent.
+    expect(isUnarmedAnswer("")).toBe(true);
+    expect(isUnarmedAnswer("   ")).toBe(true);
+    expect(isUnarmedAnswer("\n\t ")).toBe(true);
   });
 });
 

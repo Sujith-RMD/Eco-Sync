@@ -407,6 +407,19 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
                     }`}
               </p>
             ) : null}
+            {/*
+              Only the *chain* closes at END. The culprit ballot stays open, and
+              a unit that reads "submissions closed" and walks away would forfeit
+              the finale it just earned the right to cast — so the banner has to
+              say which of the two is which.
+            */}
+            {snapshot.round.code === "ROUND_2" && !snapshot.vote?.submitted ? (
+              <p className="font-mono text-[11px] leading-relaxed text-dim">
+                {snapshot.vote?.unlocked
+                  ? "Your verdict is still open — the ballot on the Suspects tab stays live after the round ends."
+                  : "The culprit ballot stays sealed. Only a unit that broke the final code may vote."}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}

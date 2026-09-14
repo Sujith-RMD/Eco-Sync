@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * [SERVER-ONLY — CONFIDENTIAL]
  *
@@ -8,6 +10,13 @@
  * by client components, route code that serializes into client props, or any
  * public API. The game engine reads it at seed time and answers live only in
  * the database's [SERVER-ONLY] columns afterwards.
+ *
+ * The `server-only` import above is what turns that from a convention into a
+ * build failure: a client component that reaches this module, directly or
+ * transitively, no longer compiles instead of shipping the answers to the
+ * browser. It is also why `UNARMED_SENTINEL` is declared in `./unarmed` rather
+ * than here — that module is deliberately guard-free so the content rule stays
+ * unit-testable, and importing this one would drag the guard in behind it.
  */
 
 export interface PuzzleSeed {
@@ -148,8 +157,6 @@ export const FINAL_CODE_PUZZLE_CODE = "LAST";
  * `db/round-2-content.sql` and `db/verify-round-2.sql` must always say the same
  * thing — a drift re-seals door 6 for every room behind it.
  */
-export const UNARMED_SENTINEL = "__UNARMED__";
-
 export const ROUND2_PUZZLES: PuzzleSeed[] = [
   {
     code: "S1",

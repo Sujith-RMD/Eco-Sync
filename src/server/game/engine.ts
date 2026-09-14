@@ -638,8 +638,25 @@ export async function castVote(input: {
     where: eq(rounds.code, "ROUND_2"),
   });
   if (!round) return { outcome: "ERROR", message: "Event is not initialized." };
-  if (round.status !== "ACTIVE") {
-    return { outcome: "ROUND_NOT_ACTIVE", message: "Voting is only open while Round 02 is live." };
+
+  /*
+    Voting deliberately outlives the round. `endRound` is the operator's natural
+    move the instant the clock reaches 75:00, and it used to close the ballot —
+    so a unit that broke the final code at minute 74 lost the game's finale to an
+    act of housekeeping, permanently, with no override anywhere in the deck.
+
+    The ballot therefore stays open through ENDED, and closes only when the event
+    is restarted or purged — both of which return ROUND_2 to PENDING. This is the
+    `submitAnswer`/`castVote` asymmetry made deliberate rather than incidental:
+    END closes the chain because the round is over, but a verdict is a separate,
+    final act that the round's end must not confiscate. It stays gated on having
+    solved the final code below, so the ballot still has to be earned.
+  */
+  if (round.status !== "ACTIVE" && round.status !== "ENDED") {
+    return {
+      outcome: "ROUND_NOT_ACTIVE",
+      message: "Voting opens with Round 02 and stays open after it ends.",
+    };
   }
 
   const participation = await findParticipation(teamId, round.id);
@@ -934,7 +951,10 @@ export async function endRound(
 
 /**
  * Apply the supplied Round 1 qualification: rank by score → finish time →
- * penalties → hints, mark the top 15, and grant Round 2 access. Idempotent.
+ * penalties → hints, mark the top 15, and grant Round 2 access. Idempotent —
+ * but only *within* its window, which is "after Round 01 has ended and before
+ * Round 02 has begun". The guard below enforces that window rather than
+ * assuming it.
  */
 export async function applyQualification(
   adminId: number,
@@ -944,6 +964,33 @@ export async function applyQualification(
     db.query.rounds.findFirst({ where: eq(rounds.code, "ROUND_2") }),
   ]);
   if (!r1 || !r2) return { ok: false, message: "Rounds are not initialized." };
+
+  /*
+    Qualification rewrites the Round 2 roster, so it is only legal once Round 01
+    is over and before Round 02 has begun. Both halves of that are load-bearing:
+
+    - Pressed while Round 01 is live, it ranks a partial field and — because the
+      round state machine is one-way — ends the round for all 60 units mid-play
+      with no way back. It used to do that silently.
+    - Pressed while Round 02 is live, it deletes and rebuilds the Round 2 roster
+      from the *current* Round 1 standings, so any unit whose rank has moved is
+      ejected from a round it is already playing.
+
+    Neither is recoverable from the command deck, so the operator is refused
+    instead of warned.
+  */
+  if (r1.status !== "ENDED") {
+    return {
+      ok: false,
+      message: `Round 01 is ${r1.status}. End it before ranking the field — qualification closes the round.`,
+    };
+  }
+  if (r2.status !== "PENDING") {
+    return {
+      ok: false,
+      message: `Round 02 is already ${r2.status}. Qualification cannot be re-run once the round has begun.`,
+    };
+  }
 
   const standings = await computeRound1Standings();
 
@@ -979,12 +1026,7 @@ export async function applyQualification(
         .onConflictDoNothing();
     }
 
-    if (r1.status !== "ENDED") {
-      await tx
-        .update(rounds)
-        .set({ status: "ENDED", endedAt: new Date() })
-        .where(eq(rounds.id, r1.id));
-    }
+    // Round 01 is guaranteed ENDED by the guard above, so it is already closed.
   });
 
   const qualified = Math.min(C.round1.qualifyingTeams, standings.length);
@@ -997,6 +1039,161 @@ export async function applyQualification(
     meta: { qualifiedCount: qualified, teamsRanked: standings.length },
   });
   return { ok: true, message: `Qualification applied. Top ${qualified} units marked; Round 02 roster rebuilt.` };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Admin repair — one unit, one link                                           */
+/* -------------------------------------------------------------------------- */
+
+export type RepairOutcome =
+  | "UNLOCKED"
+  | "ALREADY_OPEN"
+  | "ALREADY_SOLVED"
+  | "TEAM_UNKNOWN"
+  | "PUZZLE_UNKNOWN"
+  | "PUZZLE_AMBIGUOUS";
+
+/**
+ * The operator's one surgical lever: open a single link of a single unit's
+ * chain, leaving every other unit untouched.
+ *
+ * Why this exists. The chain unseals `orderIndex + 1` by exact match, so when a
+ * link is unpassable for one unit — a briefing read the wrong way, a physical
+ * prop that has gone missing, a puzzle edited after the round opened — that unit
+ * is dead for the rest of the round. Until now the only levers were RESTART
+ * (wipes all 60 units) and PURGE (wipes the event), so one stuck team was never
+ * a small problem: it was an all-or-nothing call taken live, in front of the
+ * room. This turns that into a five-second fix.
+ *
+ * Three things it deliberately does NOT do:
+ *
+ * - It never downgrades a SOLVED link. Un-solving would silently retract points
+ *   the ledger has already granted, which is the one thing an operator must not
+ *   be able to do by accident.
+ * - It never clears wrong-answer penalties. Those are already immutable ledger
+ *   rows; forgiving them would change a *score*, and scores are what the ranking
+ *   is built from. This changes *state* only.
+ * - It touches no other unit, no other link, and not the round clock.
+ *
+ * The state change is recorded twice: a `MANUAL_ADJUSTMENT` row at `delta: 0`
+ * in the unit's own ledger, so the chain of custody can explain how this unit
+ * got past a link it never solved, and an `audit_logs` row naming the operator.
+ * `delta: 0` is the point — this repairs progression, it does not award points.
+ */
+export async function unlockPuzzleForTeam(input: {
+  adminId: number;
+  teamId: number;
+  puzzleCode: string;
+}): Promise<{ outcome: RepairOutcome; message: string }> {
+  const { adminId, teamId } = input;
+  const puzzleCode = input.puzzleCode.trim().toUpperCase();
+  const now = new Date();
+
+  const team = await db.query.teams.findFirst({ where: eq(teams.id, teamId) });
+  if (!team) {
+    return { outcome: "TEAM_UNKNOWN", message: `No unit with id ${teamId}.` };
+  }
+
+  /*
+    `code` is unique per round rather than globally (`uq_puzzles_round_code`), so
+    this resolves to exactly one row in practice — Round 01 is P1…P7, Round 02 is
+    S1…S8 + LAST. It is still checked rather than assumed: silently opening the
+    wrong round's link would be worse than refusing to act.
+  */
+  const matches = await db
+    .select({
+      id: puzzles.id,
+      code: puzzles.code,
+      roundId: puzzles.roundId,
+      title: puzzles.title,
+    })
+    .from(puzzles)
+    .where(eq(puzzles.code, puzzleCode));
+  if (matches.length === 0) {
+    return { outcome: "PUZZLE_UNKNOWN", message: `No link with code ${puzzleCode}.` };
+  }
+  if (matches.length > 1) {
+    return {
+      outcome: "PUZZLE_AMBIGUOUS",
+      message: `${puzzleCode} exists in more than one round — refusing to guess.`,
+    };
+  }
+  const puzzle = matches[0]!;
+
+  const result = await db.transaction(
+    async (tx): Promise<{ outcome: RepairOutcome; message: string }> => {
+      // Same row-lock pattern as `submitAnswer`, so a repair cannot interleave
+      // with the unit's own submission on the link being opened.
+      const locked = await tx.execute(
+        sql`select id, status from team_puzzle_progress
+            where team_id = ${teamId} and puzzle_id = ${puzzle.id}
+            for update`,
+      );
+      const progress = (locked.rows[0] ?? null) as unknown as {
+        id: number;
+        status: "LOCKED" | "UNLOCKED" | "SOLVED";
+      } | null;
+
+      if (progress?.status === "SOLVED") {
+        return {
+          outcome: "ALREADY_SOLVED",
+          message: `${team.name} has already solved ${puzzle.code} — nothing to open.`,
+        };
+      }
+      if (progress?.status === "UNLOCKED") {
+        return {
+          outcome: "ALREADY_OPEN",
+          message: `${puzzle.code} is already open for ${team.name}.`,
+        };
+      }
+
+      if (progress) {
+        await tx
+          .update(teamPuzzleProgress)
+          .set({ status: "UNLOCKED", unlockedAt: now })
+          .where(eq(teamPuzzleProgress.id, progress.id));
+      } else {
+        await tx
+          .insert(teamPuzzleProgress)
+          .values({ teamId, puzzleId: puzzle.id, status: "UNLOCKED", unlockedAt: now })
+          .onConflictDoNothing();
+      }
+
+      await tx.insert(scoreEvents).values({
+        teamId,
+        roundId: puzzle.roundId,
+        puzzleId: puzzle.id,
+        type: "MANUAL_ADJUSTMENT",
+        delta: 0,
+        meta: { reason: "OPERATOR_UNLOCK", code: puzzle.code, adminId },
+      });
+
+      return {
+        outcome: "UNLOCKED",
+        message: `${puzzle.code} opened for ${team.name}. No points awarded — this repairs progression only.`,
+      };
+    },
+  );
+
+  // Only a real change is audited; a no-op refusal would just be noise in a
+  // trail the operator has to read quickly.
+  if (result.outcome === "UNLOCKED") {
+    await logAudit({
+      actorType: "ADMIN",
+      actorId: adminId,
+      action: "team.puzzle.unlock",
+      entity: "team",
+      entityId: String(teamId),
+      meta: {
+        teamName: team.name,
+        code: puzzle.code,
+        puzzleId: puzzle.id,
+        roundId: puzzle.roundId,
+      },
+    });
+  }
+
+  return result;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -348,3 +348,63 @@ the same round the participants cannot see.
    aimed at a third project, that one is still un-armed and the deck will refuse to open
    Round 02. One paste of `db/identify-content-revision.sql` into the right dashboard
    settles it in seconds.
+
+---
+
+## 12. Schema, deploy and rollback
+
+**Added 2026-09-14** (event-readiness audit, P3-1 / P3-5). This section exists because the
+answer to "how does production's schema get applied?" was not written down anywhere.
+
+### Where the schema comes from
+
+There is exactly one definition: `src/db/schema.ts`. It is applied with **`drizzle-kit push`**,
+which diffs that file against whatever `DATABASE_URL` points at and issues the difference as DDL.
+There is **no `migrations/` directory** — so no versioned history, no `drizzle-kit check` to diff
+against, and no rollback for a schema change.
+
+That makes the command only as safe as the `DATABASE_URL` it is aimed at, and `.env` points at
+`127.0.0.1:5432/app_db`. Run from this repository with the default environment, it targets your
+**laptop**, not production. Read §0a before any write.
+
+```bash
+# Local / rehearsal — what .env targets by default.
+npx drizzle-kit push
+
+# Production — supply the target explicitly. Read §0a first.
+DATABASE_URL='<the endpoint the deployed site reads>' npx drizzle-kit push
+```
+
+`push` is a *diff*, not a replay: it will also **drop** columns it finds in the target but not in
+`schema.ts`. Treat it as a production write, not a deploy step.
+
+### Why there are still no migrations — deliberate, and a post-event task
+
+`drizzle-kit generate` would produce a baseline `migrations/0000_*.sql` containing the *entire*
+schema as `CREATE TABLE` statements. Applied to a database that already has those tables it fails,
+and `drizzle-kit migrate` is the wrong command against production regardless. Adding a versioned
+baseline on the day of the event buys a benefit that only materialises afterwards, in exchange for
+a new way to break the database. **Do it after the event:** generate the baseline, record that it is
+the starting point for a *fresh* database, and use `generate` + `migrate` for every change after it.
+
+### Deploy
+
+Push to `main`; Vercel builds and promotes. There is no staging environment.
+
+### Rollback
+
+**Vercel → Deployments → select the previous good deployment → Promote.** That is the whole
+rollback story, and it works because Vercel retains previous deployments. Note it rolls back
+**code only** — a schema change or a content change is applied directly to the database and is
+*not* reverted with it.
+
+### Release tag
+
+The commit running the event is tagged **`event-2026-09-14`**. To confirm exactly what is live:
+
+```bash
+git describe --tags --always      # -> event-2026-09-14
+git log --oneline -1 event-2026-09-14
+```
+
+If the deployed site is not on that commit, it is not running the reviewed code.

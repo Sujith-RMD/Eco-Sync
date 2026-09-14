@@ -1,17 +1,34 @@
-import { UNARMED_SENTINEL } from "./catalogue";
-
 /**
  * Pure half of the content guard: recognise a placeholder answer and explain it.
  *
  * Kept free of `server-only` and of the database so the rule that decides
- * whether 60 teams can play a round is the rule under test.
+ * whether 60 teams can play a round is the rule under test. That is also why
+ * `UNARMED_SENTINEL` is declared here rather than in `./catalogue`: the
+ * catalogue is guarded now, and importing it would drag that guard in behind
+ * the one module the tests have to be able to load.
  */
+
+/**
+ * The value a link carries until its answer is armed. Deliberately long and
+ * unmistakable so no team can ever type it, and the guard below treats it —
+ * like any other `__LIKE_THIS__` value — as un-armed.
+ */
+export const UNARMED_SENTINEL = "__UNARMED__";
 
 /** Any `__LIKE_THIS__` value counts as un-armed, not just the current marker. */
 const PLACEHOLDER_SHAPE = /^__[A-Z0-9_-]+__$/;
 
 export function isUnarmedAnswer(answer: string): boolean {
   const normalized = answer.trim().toUpperCase();
+  /*
+    An empty answer is un-armed even though it is not a placeholder. The submit
+    action rejects `answer.length === 0`, so the empty string can never be typed
+    from the UI — meaning an empty expected answer is not a free solve, it is a
+    link nobody can ever pass, which strands the whole chain behind it exactly
+    the way a placeholder does. The guard exists to catch that class of content,
+    so it has to inspect the one input that is neither a sentinel nor a shape.
+  */
+  if (normalized.length === 0) return true;
   return normalized === UNARMED_SENTINEL || PLACEHOLDER_SHAPE.test(normalized);
 }
 

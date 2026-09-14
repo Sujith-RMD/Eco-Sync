@@ -15,6 +15,7 @@ import {
 import { requireAdmin } from "@/lib/auth/guards";
 import { CORRECT_SUSPECT_CODE, SUSPECTS } from "@/server/game/catalogue";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { TeamRepairPanel } from "@/components/admin/team-repair";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { toEventClock, toEventDay } from "@/lib/utils/time";
@@ -46,7 +47,7 @@ export default async function AdminTeamDetailPage({
   });
   if (!team) notFound();
 
-  const [progression, attempts, events, parts, vote] = await Promise.all([
+  const [progression, attempts, events, parts, vote, allLinks] = await Promise.all([
     db
       .select({
         roundCode: rounds.code,
@@ -106,6 +107,21 @@ export default async function AdminTeamDetailPage({
     db.query.culpritVotes.findFirst({
       where: eq(culpritVotes.teamId, teamId),
     }),
+    /*
+      Every link in both rounds, not just the ones this unit has progress rows
+      for: the whole point of the repair lever is to open a link the unit has
+      never reached, which by definition has no row to read from.
+    */
+    db
+      .select({
+        code: puzzles.code,
+        title: puzzles.title,
+        orderIndex: puzzles.orderIndex,
+        roundCode: rounds.code,
+      })
+      .from(puzzles)
+      .innerJoin(rounds, eq(rounds.id, puzzles.roundId))
+      .orderBy(rounds.code, puzzles.orderIndex),
   ]);
 
   const scoreTotal = events.reduce((acc, event) => acc + event.delta, 0);
@@ -256,6 +272,8 @@ export default async function AdminTeamDetailPage({
             </table>
           </div>
         </Panel>
+
+        <TeamRepairPanel teamId={teamId} teamName={team.name} links={allLinks} />
 
         <div className="grid gap-4 xl:grid-cols-2">
           <Panel title="Score ledger">

@@ -27,6 +27,7 @@ import {
   applyQualification,
   endRound,
   startRound,
+  unlockPuzzleForTeam,
 } from "@/server/game/engine";
 import type {
   AdminActionState,
@@ -324,8 +325,39 @@ export async function purgeEventAction(
   formData: FormData,
 ): Promise<AdminActionState> {
   const { admin } = await requireAdmin();
+  const ip = await getClientIp();
+
   if (!confirmationOk(formData, PURGE_PHRASE)) {
     return { status: "error", message: `Type ${PURGE_PHRASE} to authorize the purge.` };
+  }
+
+  /*
+    Same interlock as RESTART, and for a stronger reason. This is the only action
+    that deletes `teams`, so it destroys the access codes themselves — recovery
+    means re-seeding, which mints new codes and invalidates every credential slip
+    already in the room. It must never run underneath a live clock.
+  */
+  const liveRounds = await db
+    .select({ code: rounds.code })
+    .from(rounds)
+    .where(eq(rounds.status, "ACTIVE"));
+  if (liveRounds.length > 0) {
+    const label = liveRounds[0].code === "ROUND_1" ? "Round 01" : "Round 02";
+    return {
+      status: "error",
+      message: `${label} is still live. End it first, then purge.`,
+    };
+  }
+
+  // Last check, deliberately: a mistyped phrase or a live round is a safe
+  // refusal, not abuse, so neither may burn this budget. Keyed to the operator
+  // because every device in the venue shares one egress address.
+  const gate = consumeRateLimit(`admin:purge:${admin.id}`, 2, 10 * 60_000);
+  if (!gate.allowed) {
+    return {
+      status: "error",
+      message: `Too many purges. Retry in ${gate.retryAfterSeconds}s.`,
+    };
   }
 
   await db.transaction(async (tx) => {
@@ -349,7 +381,82 @@ export async function purgeEventAction(
     action: "event.purge",
     entity: "round",
     meta: { preserved: ["admins", "audit_logs"] },
+    ip,
   });
-  revalidatePath("/admin");
+
+  // Same surface list as RESTART: a purge empties every one of these.
+  for (const path of [
+    "/admin",
+    "/admin/teams",
+    "/admin/leaderboard",
+    "/admin/votes",
+    "/admin/audit",
+    "/lobby",
+  ]) {
+    revalidatePath(path);
+  }
+
   return { status: "ok", message: "Event data purged. Operators and audit trail preserved." };
+}
+
+const repairSchema = z.object({
+  teamId: z.coerce.number().int().positive(),
+  puzzleCode: z.string().trim().min(1).max(16),
+});
+
+/**
+ * Open one link of one unit's chain.
+ *
+ * Deliberately NOT behind a confirmation phrase, unlike RESTART and PURGE. This
+ * is the action an operator reaches for *during* a live round, with a team
+ * standing at the desk, and the cost of a mistype is nil: it cannot retract a
+ * solved link, cannot change a score (the ledger entry it writes is `delta: 0`),
+ * and cannot touch another unit. Making it prove intent would only make the
+ * stuck team wait longer.
+ *
+ * It is also deliberately not rate-limited. The destructive actions are, but
+ * this one is idempotent and non-destructive, and the realistic worst case is an
+ * operator fixing several units in quick succession.
+ */
+export async function unlockPuzzleForTeamAction(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const { admin } = await requireAdmin();
+
+  const parsed = repairSchema.safeParse({
+    teamId: formData.get("teamId"),
+    puzzleCode: formData.get("puzzleCode"),
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "Pick a link to open before submitting." };
+  }
+
+  const result = await unlockPuzzleForTeam({
+    adminId: admin.id,
+    teamId: parsed.data.teamId,
+    puzzleCode: parsed.data.puzzleCode,
+  });
+
+  /*
+    "Already open" and "already solved" are refusals to act, not failures — the
+    unit is fine and nothing was changed, so they read as neutral, not as an
+    error the operator has to chase down.
+  */
+  const acted = result.outcome === "UNLOCKED";
+  const benign =
+    result.outcome === "ALREADY_OPEN" || result.outcome === "ALREADY_SOLVED";
+
+  if (acted) {
+    // The unit's own page shows the new progression row and ledger entry; the
+    // roster and the standings both move with it.
+    revalidatePath(`/admin/teams/${parsed.data.teamId}`);
+    revalidatePath("/admin/teams");
+    revalidatePath("/admin/leaderboard");
+  }
+
+  return {
+    status: acted || benign ? "ok" : "error",
+    message: result.message,
+  };
 }
