@@ -26,7 +26,7 @@ import {
   type RoundSnapshot,
 } from "@/types/game";
 import { cn } from "@/lib/utils/cn";
-import { toEventClock, toEventStamp } from "@/lib/utils/time";
+import { toEventStamp } from "@/lib/utils/time";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Button, buttonClasses } from "@/components/ui/button";

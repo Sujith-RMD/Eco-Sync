@@ -16,16 +16,13 @@
      surfaces are the same 213-217 hue pushed to 3-22% lightness, and the
      accents are the logo blue lifted for legibility on a near-black ground —
      #3f78bc itself only reaches 4.4:1 there, too low for the 11-12px mono text
-     this UI is built from, so `acid` is its bright sibling and `acid-deep`
-     keeps the exact logo hex.
+     this UI is built from, so `acid` is its bright sibling.
      `alert` and `caution` are deliberately NOT brand-derived: red means a wrong
      answer and amber means a lockout, regardless of branding.
   */
   /* surfaces */
   --color-abyss-950: #03070c;
   --color-abyss-900: #060b13;
-  --color-abyss-800: #0a131d;
-  --color-panel: #101b26;
   --color-line: #23374d;
 
   /* text */
@@ -35,7 +32,6 @@
 
   /* accents */
   --color-acid: #45a4f7;
-  --color-acid-deep: #3f78bc;
   --color-pulse: #5abbe2;
   --color-alert: #ff5470;
   --color-caution: #ffc857;

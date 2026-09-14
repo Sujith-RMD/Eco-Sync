@@ -115,15 +115,6 @@ export function setStorylineCursor(
 }
 
 /**
- * Drops every cached cursor. Test and navigation seam: the cache is intentionally
- * long-lived so snapshots compare by identity, which would otherwise let a stale
- * cursor leak into the next render of a different round.
- */
-export function clearStorylineCursorCache(): void {
-  cache.clear();
-}
-
-/**
  * How many beats deserve a "new information" flag.
  *
  * `floor` is the index of the first beat the unit's own investigation produced:
