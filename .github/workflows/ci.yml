@@ -1,0 +1,268 @@
+# ---------------------------------------------------------------------------
+# ECO-SYNC: THE BREACH — build, test and deploy
+# ---------------------------------------------------------------------------
+#
+# What this workflow does, and what it deliberately does not do.
+#
+#   verify      lint -> route types -> typecheck -> engine tests -> prod build
+#               Runs on every pull request and every push to main.
+#
+#   deploy      Vercel production, via the CLI with --prebuilt.
+#               MANUAL or TAG ONLY by default. See "Why deploy is not
+#               automatic" below.
+#
+#   verify-live HTTP probe of the deployed site.
+#
+# WHY DEPLOY IS NOT AUTOMATIC
+#   Vercel's Git integration already builds and promotes `main` on its own.
+#   Adding an automatic deploy here would ship two production deployments per
+#   commit, racing each other, and the one that lands last is not necessarily
+#   the one this workflow verified. So the deploy job is opt-in:
+#
+#     * Actions -> CI -> Run workflow -> tick "deploy_production", or
+#     * push a tag matching `event-*` (the release tag for an event run).
+#
+#   To hand deployment to this workflow instead, delete Vercel's own Git
+#   auto-deploy first (vercel.json: {"git":{"deploymentEnabled":false}}),
+#   then add `branches: [main]` to the deploy job's `if:`. Doing one without
+#   the other is worse than doing neither.
+#
+# THIS WORKFLOW NEVER TOUCHES THE DATABASE
+#   The schema is applied by hand with `drizzle-kit push` (docs/P0-EVENT-RUNBOOK.md
+#   section 12). That command is a *diff*, not a replay: it will also DROP
+#   columns it finds in the target but not in src/db/schema.ts, and it acts on
+#   whatever DATABASE_URL it is given. It must never run unattended, and it must
+#   never run here. Same for scripts/smoke.ts, which TRUNCATEs the event seed.
+#   CI gets a placeholder connection string and no database at all.
+#
+# NODE 22 IS A FLOOR, NOT A PREFERENCE
+#   next 16 requires >= 20.9, but vitest 5 requires ^22.12.0 || ^24 || >=26.
+#   Node 20 fails the test job. Do not lower this.
+# ---------------------------------------------------------------------------
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["event-*"]
+  workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: "After the gate passes, deploy to Vercel production"
+        type: boolean
+        default: false
+
+# Least privilege: nothing here writes to the repository.
+permissions:
+  contents: read
+
+# Superseded pull-request runs are wasted minutes; superseded deploys are not
+# something to cancel halfway.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: "22.x"
+
+jobs:
+  # -------------------------------------------------------------------------
+  # The gate. Everything below only runs if this passes.
+  # -------------------------------------------------------------------------
+  verify:
+    name: Verify — lint, types, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Not a secret and not a real database. `next build` needs the variable
+      # to exist (src/db/index.ts throws at module load without it) but every
+      # participant and operator route is `force-dynamic`, so nothing connects
+      # during the build. Verified: a build against an unreachable host
+      # succeeds, and 17 of 20 routes are dynamic.
+      DATABASE_URL: "postgresql://ci:ci@127.0.0.1:5432/ci_placeholder"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # package.json has no `packageManager` field, so setup-node will not
+          # cache npm on its own. Ask for it explicitly.
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # next-env.d.ts is committed pointing at ./.next/dev/types/routes.d.ts,
+      # which does not exist in a fresh checkout. typegen regenerates the route
+      # types and repoints that import, so the typecheck below sees the real
+      # route surface instead of silently checking nothing.
+      - name: Generate route types
+        run: npx next typegen
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # 77 tests across 8 files. No database, no environment: every rule under
+      # test is a pure function. Vitest exits non-zero when it finds no test
+      # files, so an empty suite cannot pass as a green one.
+      - name: Engine rule tests
+        run: npx vitest run
+
+      - name: Production build
+        run: npm run build
+
+      # `next build` rewrites the tracked next-env.d.ts by design (dev variant
+      # -> prod variant). Restore that one file, then insist nothing else moved:
+      # a build that edits tracked sources is not reproducible, and this repo
+      # has already been bitten by generated files drifting out of git.
+      - name: Assert the build did not rewrite tracked sources
+        run: |
+          git checkout -- next-env.d.ts
+          if ! git diff --quiet; then
+            echo "::error::next build rewrote tracked files:"
+            git diff --stat
+            exit 1
+          fi
+          echo "Build left the working tree clean."
+
+  # -------------------------------------------------------------------------
+  # Deploy. Opt-in: manual dispatch with the box ticked, or an event-* tag.
+  # -------------------------------------------------------------------------
+  deploy:
+    name: Deploy — Vercel production
+    needs: verify
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_production)
+      || startsWith(github.ref, 'refs/tags/event-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Creates the `production` environment, so approvals and a deployment
+    # history come for free. Add required reviewers there to gate the button.
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+
+    env:
+      # .vercel/ is gitignored, so the CLI cannot find the project by itself on
+      # a runner. These two ids come from .vercel/project.json locally:
+      #   orgId     team_CgUGBGWfx0I9E6iQEza0pV1y
+      #   projectId prj_afV3aFeC5yVMTmKWP6XV3YYY0G9o
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      # Pulls the project's production environment variables onto the runner.
+      # Storage variables arrive masked as empty strings — src/db/index.ts
+      # already handles that with `DATABASE_URL || DATABASE_POSTGRES_URL`.
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      # Builds here rather than on Vercel, so what ships is the artifact this
+      # runner produced. --prebuilt on the next step skips Vercel's rebuild.
+      - name: Build project artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt artifacts
+        id: deploy
+        run: |
+          raw="$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})"
+          echo "$raw"
+
+          # The CLI prints the deployment URL, but not necessarily alone.
+          # Pull the last URL out of the output rather than trusting the whole
+          # string, and fail loudly if there isn't one — an empty URL would
+          # otherwise turn the probe below into nine misleading errors.
+          url="$(printf '%s\n' "$raw" | grep -oE 'https://[^[:space:]]+' | tail -n1 || true)"
+          if [ -z "$url" ]; then
+            echo "::error::could not read a deployment URL from the Vercel CLI output"
+            exit 1
+          fi
+
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed to $url" >> "$GITHUB_STEP_SUMMARY"
+
+  # -------------------------------------------------------------------------
+  # Post-deploy probe. Status codes only — see the note on auth below.
+  # -------------------------------------------------------------------------
+  verify-live:
+    name: Probe the deployed site
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe production
+        env:
+          # The URL `vercel deploy` printed. Read from the step env, not the
+          # job env, so the `needs` context is unambiguously in scope.
+          BASE_URL: ${{ needs.deploy.outputs.url }}
+        run: |
+          set -uo pipefail
+          fail=0
+
+          check() {
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$BASE_URL$1")"
+            if [ "$code" = "$2" ]; then
+              echo "ok    $1 -> $code"
+            else
+              echo "::error::$1 returned $code, expected $2"
+              fail=1
+            fi
+          }
+
+          # Public surfaces.
+          check / 200
+          check /login 200
+          check /admin/login 200
+          check /api/health 200
+
+          # 307, not a fault: an unauthenticated request to these is redirected
+          # to /login by design. A 200 here would mean the standings or lobby
+          # shell leaked to a signed-out visitor.
+          check /lobby 307
+          check /leaderboard 307
+
+          # There is no public standings feed, by design.
+          check /api/leaderboard 404
+
+          # The team consoles are gated inside the client bundle, not at the
+          # route, so an HTTP probe can only prove they render. Proving the
+          # redirect needs a browser — that is runbook section 10.
+          check /team/round-1 200
+          check /team/round-2 200
+
+          # A 200 from /api/health with the database down is not a healthy
+          # deployment. The endpoint reports 503 in that case, but check the
+          # body too so a proxy or error page cannot pass as a live app.
+          body="$(curl -s --max-time 15 "$BASE_URL/api/health")"
+          echo "health: $body"
+          if ! printf '%s' "$body" | grep -q '"status":"up"'; then
+            echo "::error::health endpoint did not report the database as up"
+            fail=1
+          fi
+
+          exit "$fail"
