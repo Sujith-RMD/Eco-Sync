@@ -14,8 +14,8 @@
 --
 --   Run BEFORE applying round-2-content.sql → expect FAILs on placeholder content
 --   Run AFTER applying it                   → expect ok = t on all 8 rows,
---     chain_contiguous = t, exactly one FINAL_CODE last, and arm_s7_before_
---     opening = t for S7 until its QR answer is armed.
+--     chain_contiguous = t, exactly one FINAL_CODE last, awaiting_answer = f for
+--     every link (S7 is armed with the QR payload 'DELETED').
 --
 -- The Round 1 fingerprint must read identically before and after any Round 2
 -- operation. If it moves, the operation touched a round it should not have.
@@ -49,7 +49,7 @@ with expected(code, order_index, kind, points, title, briefing, answer) as (
     ('S7', 6, 'DIGITAL', 100,
      'Newspaper — Hidden QR Codes',
      E'The words “waste” and “podium” point to two QR codes hidden in the room.\nFind and scan both QR codes.\nWhat do they reveal?',
-     '__UNARMED__'),
+     'DELETED'),
     ('S8', 7, 'DIGITAL', 100,
      'The Gate Log',
      E'One suspect''s car is in the gate log, and their statement says they were home all night.\nWhen did that car enter campus? (HHMM, no colon)',
@@ -77,7 +77,10 @@ select
   (l.briefing = e.briefing)                    as ok_briefing,
   (l.answer = e.answer)                        as ok_answer,
   coalesce(l.hint_count, -1)                   as hints,
-  coalesce(l.answer = '__UNARMED__', false)    as awaiting_answer
+  -- Placeholder-SHAPED, not "equal to one legacy string": the guard in
+  -- db/arm-s7.sql and src/server/game/content-guard.ts both refuse any
+  -- __LIKE_THIS__ value, so a future placeholder must light this up too.
+  coalesce(l.answer ~ '^__[A-Z0-9_-]+__$', false) as awaiting_answer
 from expected e
 full outer join live l on l.code = e.code;
 
@@ -85,7 +88,7 @@ full outer join live l on l.code = e.code;
 select code,
        (row_present and row_expected)                       as ok,
        ok_order, ok_kind, ok_points, ok_title, ok_briefing, ok_answer,
-       awaiting_answer                                      as arm_s7_before_opening,
+       awaiting_answer                                      as awaiting_answer,
        hints
   from round2_check
  order by code nulls last;

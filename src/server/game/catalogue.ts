@@ -141,9 +141,12 @@ export const FINAL_CODE_PUZZLE_CODE = "LAST";
  * a gap silently strands every later puzzle and an unset answer can block the
  * culprit vote.
  *
- * RUNBOOK — S7's answer is a sentinel, not a solution: the two QR payloads were
- * not supplied. Round 2 must not be opened until it is armed, because LAST sits
- * directly behind it.
+ * S7's QR payloads were never supplied, so the props are GENERATED from the
+ * armed value instead: `props/s7/` holds two QR codes that each decode to
+ * "DELETED" byte-exactly (verified with a decoder, not assumed), so a team that
+ * scans either code and types what it sees matches. Database, this catalogue,
+ * `db/round-2-content.sql` and `db/verify-round-2.sql` must always say the same
+ * thing — a drift re-seals door 6 for every room behind it.
  */
 export const UNARMED_SENTINEL = "__UNARMED__";
 
@@ -216,8 +219,8 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
       "The words “waste” and “podium” point to two QR codes hidden in the room.\n" +
       "Find and scan both QR codes.\n" +
       "What do they reveal?",
-    // Supplied material does not state the solution. Arm via the runbook.
-    answer: UNARMED_SENTINEL,
+    // Prop payload: both printed codes in props/s7/ decode to exactly this.
+    answer: "DELETED",
     hints: [],
     points: 100,
   },

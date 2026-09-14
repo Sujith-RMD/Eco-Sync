@@ -82,11 +82,14 @@ describe("catalogue armed state", () => {
     expect(unarmedIn(ROUND1_PUZZLES)).toEqual([]);
   });
 
-  it("Round 02's only un-armed link is S7, the QR pair", () => {
-    // Deliberate tripwire: arming S7 fails this test. That is the point — the
-    // change must be made here and in the database together, and `db
-    // /round-2-content.sql` plus the live row are what teams actually read.
-    expect(unarmedIn(ROUND2_PUZZLES)).toEqual(["S7"]);
+  it("Round 02 is fully armed — the QR pair no longer reads as a placeholder", () => {
+    // This assertion USED to be a deliberate tripwire reading ["S7"], so that
+    // arming the QR pair could not be done in the database alone. It is now
+    // armed in every place at once — the live row, db/round-2-content.sql,
+    // db/verify-round-2.sql and this catalogue — and the tripwire flipped with
+    // it: a placeholder reappearing anywhere in Round 02 lights this up again,
+    // which is exactly when a round must not be opened.
+    expect(unarmedIn(ROUND2_PUZZLES)).toEqual([]);
   });
 
   it("the marker is unmistakable as an answer, so nobody can type it by accident", () => {

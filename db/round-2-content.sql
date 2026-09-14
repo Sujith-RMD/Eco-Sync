@@ -12,8 +12,11 @@
 --   * Local (psql):  set PGCLIENTENCODING=UTF8
 --                    psql -h 127.0.0.1 -U postgres -d app_db -f round-2-content.sql
 --
--- S7's answer is a sentinel, not a solution: the two QR payloads were never
--- supplied. Round 2 must not be opened until it is armed (last statement).
+-- S7's answer WAS a sentinel because the two QR payloads were never supplied.
+-- It is now armed with 'DELETED': props/s7/ prints two QR codes generated to
+-- decode to exactly that word (round-trip verified). Round 2's guard only lets
+-- the round open while every answer is real, so this value must agree with
+-- catalogue.ts, verify-round-2.sql and the live row.
 -- =============================================================================
 
 begin;
@@ -83,7 +86,7 @@ cross join (values
   ('S7', 6, 'DIGITAL',
    'Newspaper — Hidden QR Codes',
    E'The words “waste” and “podium” point to two QR codes hidden in the room.\nFind and scan both QR codes.\nWhat do they reveal?',
-   '__UNARMED__', 100),
+   'DELETED', 100),
 
   ('S8', 7, 'DIGITAL',
    'The Gate Log',
@@ -98,15 +101,18 @@ cross join (values
 where r.code = 'ROUND_2';
 
 comment on table puzzles is
-  'Round 2 content: 8 supplied questions, order_index 1..8 contiguous. S7 armed separately.';
+  'Round 2 content: 8 supplied questions, order_index 1..8 contiguous. S7 armed (QR props generated from props/s7/).';
 
 commit;
 
 -- ---------------------------------------------------------------------------
--- Verification. Expect exactly 8 rows, order_index 1..8 with no gaps, LAST last.
+-- Verification. Expect exactly 8 rows, order_index 1..8 with no gaps, LAST last,
+-- and awaiting_answer = f on every row (S7 is armed). The flag is
+-- placeholder-SHAPED, not "equal to one legacy string", so a future
+-- __LIKE_THIS__ value is caught here exactly as the engine's guard catches it.
 -- ---------------------------------------------------------------------------
 select p.order_index, p.code, p.kind, p.points, p.title,
-       p.expected_answer_normalized = '__UNARMED__' as awaiting_answer
+       p.expected_answer_normalized ~ '^__[A-Z0-9_-]+__$' as awaiting_answer
   from puzzles p
   join rounds r on r.id = p.round_id
  where r.code = 'ROUND_2'
@@ -121,12 +127,12 @@ select count(*) as rows,
  where r.code = 'ROUND_2';
 
 -- ---------------------------------------------------------------------------
--- RUNBOOK — arm S7 when the QR payloads are known, then re-run the verify block.
--- The culprit's name asked for at LAST is carried by the vote panel, which this
--- answer unseals; the vote's correct suspect is set in code, not here.
+-- S7 IS ARMED: 'DELETED' is both the seeded value here and the payload of the
+-- generated QR codes in props/s7/. The culprit's name asked for at LAST is
+-- carried by the vote panel, which that answer unseals; the vote's correct
+-- suspect is set in code (catalogue.ts), not here.
 -- ---------------------------------------------------------------------------
--- update puzzles
---    set expected_answer_normalized = '<THE ANSWER, UPPERCASE, NO PADDING>',
---        updated_at = now()
---  where round_id = (select id from rounds where code = 'ROUND_2')
---    and code = 'S7';
+-- If S7 ever needs re-arming (a new payload): change it HERE, in
+-- verify-round-2.sql, in catalogue.ts, and in scripts/gen-s7-props.mjs (then
+-- re-print the props), or run db/arm-s7.sql against the live database.
+-- ---------------------------------------------------------------------------

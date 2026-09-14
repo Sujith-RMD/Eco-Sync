@@ -1,37 +1,39 @@
 -- =============================================================================
 -- ECO-SYNC: THE BREACH — arm S7 (Newspaper — Hidden QR Codes)
 --
--- S7 is the only Round 2 link whose answer is a placeholder, and it sits at
--- position 6 of 8: LAST and the culprit vote are directly behind it. Until this
--- runs, opening Round 02 is refused by the engine's content guard.
+-- S7 sits at position 6 of 8: LAST and the culprit vote are directly behind it.
+-- While its answer was the __UNARMED__ placeholder, the engine's content guard
+-- refused to open Round 02.
 --
--- HOW TO GET THE PAYLOAD — do not type it from memory:
---   1. Scan each printed QR code with a phone (the same camera the teams use).
---   2. Copy the decoded text exactly as it appears.
---   3. Paste it into the ONE line marked EDIT ME below.
+-- THE PAYLOAD IS GENERATED, NOT SCANNED: no QR codes existed when this was
+-- armed, so props/s7/qr-waste.png and props/s7/qr-podium.png were generated to
+-- encode EXACTLY the value below (round-trip verified with a QR decoder, not
+-- assumed — scripts/gen-s7-props.mjs). A team that scans either printed code
+-- and types what its phone shows matches this value character for character.
 --
 -- WHAT THE ENGINE COMPARES AGAINST (rules.ts normalizeAnswer):
 --   Unicode NFKC  →  every whitespace run collapsed to one space  →  trimmed  →
 --   UPPERCASE.  Punctuation and spaces INSIDE the answer are preserved.
---   So a submission of "unarmed  sentinel" matches "UNARMED SENTINEL", while
---   "UNARMEDSENTINEL" does not, and neither does a colon or full stop.
---   This script applies the same upper/trim/collapse to what you paste, and
---   rejects non-ASCII, so the stored value cannot drift from what a phone can
---   actually produce.
+--   The payload below is a single ASCII word, so the space/punctuation traps
+--   cannot bite at this door. This script applies the same upper/trim/collapse
+--   to what you paste, and rejects non-ASCII, so the stored value cannot drift.
 --
--- AFTERWARDS: run db/verify-round-2.sql (the arming flag must go false), update
--- ROUND2_PUZZLES in src/server/game/catalogue.ts to the same value, and fix the
--- deliberate tripwire in tests/engine/content-guard.test.ts — the database and
--- the catalogue must say the same thing, or the next repair re-introduces this.
+-- HOW TO RUN: paste the WHOLE file into the Supabase SQL editor (production)
+-- or psql (local) and Run. It is safe to re-run: it writes the same value.
+--
+-- AFTERWARDS: run db/verify-round-2.sql (every arming flag must read false).
+-- The catalogue, db/round-2-content.sql and db/verify-round-2.sql already carry
+-- this value — if you change it here, change it there too, or the next repair
+-- re-introduces the drift this whole guard exists to prevent.
 -- =============================================================================
 
 begin;
 
 do $arm$
 declare
-  -- ↓↓↓ EDIT THIS ONE LINE: paste the text the QR codes decode to. ↓↓↓
-  payload constant text := 'REPLACE_WITH_SCANNED_TEXT';
-  -- ↑↑↑ nothing below this line needs changing. ↑↑↑
+  -- Payload of both printed QR codes in props/s7/. Re-generate the props with
+  -- `node scripts/gen-s7-props.mjs` if this ever changes.
+  payload constant text := 'DELETED';
 
   -- The unfilled-template check is assembled from split literals on purpose: a
   -- find-and-replace of the payload above must not rewrite the comparison it is
@@ -41,7 +43,7 @@ declare
   cleaned text;
 begin
   if payload = marker then
-    raise exception 'S7 is still un-armed: put the scanned QR text in the payload line first.';
+    raise exception 'S7 is still un-armed: put the QR payload in the payload line first.';
   end if;
 
   cleaned := upper(regexp_replace(btrim(payload), '\s+', ' ', 'g'));
