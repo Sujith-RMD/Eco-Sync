@@ -7,9 +7,9 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { buttonClasses } from "@/components/ui/button";
 
 const PARAMETERS = [
-  { label: "Field", value: "61", sub: "units deployed" },
+  { label: "Field", value: "61", sub: "teams deployed" },
   { label: "Round 01", value: "40:00", sub: "top 15 advance" },
-  { label: "Round 02", value: "75:00", sub: "3 units prevail" },
+  { label: "Round 02", value: "75:00", sub: "3 teams prevail" },
   { label: "Verdict", value: "Sealed", sub: "culprit vote" },
 ] as const;
 
@@ -18,7 +18,7 @@ const TICKER_ITEMS = [
   "Chain of custody active",
   "Evidence first",
   "Trust the proof",
-  "61 units deployed",
+  "61 teams deployed",
   "The Breach protocol",
 ] as const;
 
@@ -46,7 +46,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="reveal reveal-3 mt-6 max-w-xl text-base leading-relaxed text-mist sm:mt-8 sm:text-lg">
-            Sixty units enter a compromised facility. Read the room. Trace the
+            Sixty-one teams enter a compromised facility. Read the room. Trace the
             evidence. Expose the insider before the trail goes cold.
           </p>
 

@@ -6,8 +6,8 @@ export const teamLoginSchema = z.object({
   teamName: z
     .string()
     .trim()
-    .min(2, "Unit designation is too short.")
-    .max(80, "Unit designation is too long."),
+    .min(2, "Team designation is too short.")
+    .max(80, "Team designation is too long."),
   accessCode: z.string().min(1, "Access code is required.").max(128),
 });
 

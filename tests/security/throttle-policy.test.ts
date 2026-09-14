@@ -51,15 +51,15 @@ describe("room-scale invariants", () => {
   /**
    * The regression this guards: the original limiter counted every attempt,
    * successfully or not, against one IP bucket of 10 per five minutes. Sixty
-   * units behind one venue egress address were locked out by logging in.
+   * teams behind one venue egress address were locked out by logging in.
    */
   it("gives the whole room headroom to mistype from one shared address", () => {
-    // Seventy-five units is the room size the live event runs at.
+    // Seventy-five teams is the room size the live event runs at.
     const worstHonestRoom = 75 * 3;
     expect(worstHonestRoom).toBeLessThan(SIGNIN_POLICIES.teamSource.limit);
   });
 
-  it("absorbs a fourth typo per unit without refusing the room", () => {
+  it("absorbs a fourth typo per team without refusing the room", () => {
     // The margin the old 240 ceiling did not have: 75 x 4 = 300 exceeded it.
     expect(75 * 4).toBeLessThan(SIGNIN_POLICIES.teamSource.limit);
   });
@@ -69,16 +69,16 @@ describe("room-scale invariants", () => {
     expect(TEAM.limit).toBeGreaterThan(0);
   });
 
-  it("pauses only the offending unit, not its neighbours", () => {
-    const spentUnit = { failures: TEAM.limit, windowEndsAt: NOW + 60_000 };
-    const innocentUnit = { failures: 0, windowEndsAt: NOW + 60_000 };
+  it("pauses only the offending team, not its neighbours", () => {
+    const spentTeam = { failures: TEAM.limit, windowEndsAt: NOW + 60_000 };
+    const innocentTeam = { failures: 0, windowEndsAt: NOW + 60_000 };
     const sharedAddress = {
       failures: 180,
       windowEndsAt: NOW + 60_000,
     };
 
-    expect(evaluateBudget(spentUnit, NOW, TEAM).allowed).toBe(false);
-    expect(evaluateBudget(innocentUnit, NOW, TEAM).allowed).toBe(true);
+    expect(evaluateBudget(spentTeam, NOW, TEAM).allowed).toBe(false);
+    expect(evaluateBudget(innocentTeam, NOW, TEAM).allowed).toBe(true);
     expect(
       evaluateBudget(sharedAddress, NOW, SIGNIN_POLICIES.teamSource).allowed,
     ).toBe(true);
@@ -101,7 +101,7 @@ describe("budget keys", () => {
   });
 
   it("keeps credential and address budgets apart", () => {
-    expect(teamCredentialKey("unit-01")).not.toBe(sourceKey("unit-01"));
+    expect(teamCredentialKey("team#8210")).not.toBe(sourceKey("team#8210"));
     expect(adminCredentialKey("admin")).not.toBe(teamCredentialKey("admin"));
   });
 });

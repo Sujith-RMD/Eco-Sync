@@ -59,7 +59,7 @@ async function guardPair(
 /**
  * Records ONE failure for a key, rolling the window over if the stored one has
  * already expired. Written as a single atomic upsert so concurrent retries from
- * the same unit cannot lose counts.
+ * the same team cannot lose counts.
  */
 async function recordFailure(key: string, policy: ThrottlePolicy): Promise<void> {
   const now = Date.now();
@@ -103,7 +103,7 @@ export async function recordTeamSignInFailure(
   }
 }
 
-/** A unit that gets in has proven itself; forget its typo history. */
+/** A team that gets in has proven itself; forget its typo history. */
 export async function noteTeamSignInSuccess(teamName: string): Promise<void> {
   await db
     .delete(authThrottle)

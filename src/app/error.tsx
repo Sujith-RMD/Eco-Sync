@@ -12,12 +12,12 @@ import { StatusPill } from "@/components/ui/status-pill";
  *
  * Every participant route is `force-dynamic` and makes ~10 database round-trips
  * per render, so one transient pooler failure used to hand a team Next's default
- * error screen: no branding, no explanation, no way back. With 60 phones polling
+ * error screen: no branding, no explanation, no way back. With 61 phones polling
  * every 8 seconds, a single bad minute read as a dead event.
  *
  * Two deliberate choices in the copy:
  *
- * - It blames the *server*, not the unit. Almost every one of these will be a
+ * - It blames the *server*, not the team. Almost every one of these will be a
  *   blip, and a team that thinks it broke something stops playing.
  * - It does not print the error. In production Next redacts the message anyway,
  *   and a raw one could carry SQL. The `digest` is surfaced instead, because it

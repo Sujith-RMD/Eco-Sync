@@ -10,7 +10,7 @@ import {
 } from "@/server/game/catalogue";
 
 /**
- * The rule that decides whether 60 rooms can play a round.
+ * The rule that decides whether 61 rooms can play a round.
  *
  * A placeholder answer is not a cosmetic gap: the chain unseals `orderIndex + 1`
  * by exact match, so one un-armed link strands everything behind it, including

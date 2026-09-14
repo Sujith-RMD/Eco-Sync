@@ -31,7 +31,7 @@ export default async function TeamLoginPage() {
         <div className="mx-auto w-full max-w-md">
           <Panel title="Team access terminal">
             <p className="mb-6 font-mono text-[12px] leading-relaxed text-mist">
-              Identify your unit. Access codes were issued at check-in.
+              Identify your team. Access codes were issued at check-in.
               Every attempt is written to the custody log.
             </p>
             <TeamLoginForm />

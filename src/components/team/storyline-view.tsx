@@ -23,7 +23,7 @@ interface StorylineViewProps {
   summary: StorylineSummary;
   roundStatus: string;
   progress: { solved: number; total: number; currentCode: string | null } | null;
-  /** Set when the unit can see the file but has produced nothing yet. */
+  /** Set when the team can see the file but has produced nothing yet. */
   openedAt: string | null;
 }
 
@@ -94,14 +94,14 @@ function BeatRow({ beat, isNew }: { beat: StorylineBeat; isNew: boolean }) {
 }
 
 /**
- * The case file: what happened, in order, derived entirely from the unit's own
+ * The case file: what happened, in order, derived entirely from the team's own
  * progression.
  *
  * Locked links contribute nothing, so the file can never spoil ahead; the count
  * of sealed links is stated instead, which keeps "how much is left" answerable
  * without revealing what is left.
  *
- * On opening, the beats the unit had not seen are rendered as new for this
+ * On opening, the beats the team had not seen are rendered as new for this
  * visit and the reading cursor advances — so the badge clears and the same
  * unlock is never announced twice, even by refresh.
  */
@@ -195,7 +195,7 @@ export function StorylineView({
           <div className="flex items-start gap-3">
             <BookMarked className="mt-0.5 h-4 w-4 shrink-0 text-dim" />
             <p className="font-mono text-[12px] leading-relaxed text-dim">
-              The file is empty. Command has not opened this round for your unit,
+              The file is empty. Command has not opened this round for your team,
               so nothing has been transmitted yet — briefings arrive here the
               moment they unseal.
             </p>

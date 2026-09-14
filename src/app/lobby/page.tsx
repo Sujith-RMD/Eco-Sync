@@ -19,7 +19,7 @@ import { AutoRefresh } from "@/components/game/timer";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Unit Lobby",
+  title: "Team Lobby",
 };
 
 interface LobbyBoard {
@@ -72,9 +72,9 @@ export default async function LobbyPage() {
     <div className="relative flex min-h-dvh flex-col">
       <Backdrop />
       {/*
-        The lobby is where every unit waits for the operator to open a round, so
+        The lobby is where every team waits for the operator to open a round, so
         it polls for that status flip. Cadence is deliberately slower than the
-        round console's 8s: this is the one screen all sixty handsets sit on at
+        round console's 8s: this is the one screen all sixty-one handsets sit on at
         the same time, and at 8s that alone is 7.5 server renders per second
         against a measured single-process ceiling near 10. Twelve seconds keeps
         about half the capacity free and still surfaces a round start within one
@@ -82,7 +82,7 @@ export default async function LobbyPage() {
       */}
       <AutoRefresh intervalMs={12_000} />
       <Topbar>
-        <StatusPill tone="ok" label={`unit // ${team.name}`} />
+        <StatusPill tone="ok" label={`team // ${team.name}`} />
         <LogoutButton />
       </Topbar>
 

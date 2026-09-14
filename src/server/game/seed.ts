@@ -12,7 +12,7 @@ import { normalizeAnswer } from "@/server/game/rules";
 /**
  * Check-in roster, in sheet order. `name` is the login identifier issued at the
  * desk — the real TEAM#XXXX designation, not a placeholder. The order pairs each
- * unit with the access code printed beside it, so it must not be reshuffled.
+ * team with the access code printed beside it, so it must not be reshuffled.
  */
 const TEAM_ROSTER = [
   "TEAM#8210", "TEAM#9303", "TEAM#5376", "TEAM#3481", // AB5-101

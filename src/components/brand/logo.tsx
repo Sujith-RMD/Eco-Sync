@@ -14,7 +14,7 @@ interface LogoMarkProps {
  * A plain <img> rather than next/image on purpose: `sharp` is installed, so the
  * optimizer would work — but every page view would then route this static file
  * through a server-side fetch-and-rescale on the same single process that
- * measures out at roughly ten renders per second with sixty handsets polling.
+ * measures out at roughly ten renders per second with sixty-one handsets polling.
  * A plain <img> costs the server nothing after the first hit and is cached for
  * the rest of the event. The 112px asset also covers 3x-density phones at the
  * largest size the topbar asks for.

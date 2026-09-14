@@ -31,7 +31,7 @@ export default async function AdminTeamsPage({
   return (
     <AdminShell
       active="teams"
-      eyebrow="Command deck // units"
+      eyebrow="Command deck // teams"
       title="TEAM REGISTRY"
       adminName={admin.username}
     >
@@ -40,7 +40,7 @@ export default async function AdminTeamsPage({
           <TextInput
             name="q"
             defaultValue={q ?? ""}
-            placeholder="Search units…"
+            placeholder="Search teams…"
             autoComplete="off"
             aria-label="Search teams"
           />
@@ -54,7 +54,7 @@ export default async function AdminTeamsPage({
           <table className="w-full font-mono text-[11px] sm:min-w-[860px] sm:text-[12px]">
             <thead>
               <tr className="border-b border-line/70 text-left text-[9px] uppercase tracking-[0.12em] text-dim sm:text-[10px] sm:tracking-[0.22em]">
-                <th className="px-3 py-2.5 font-medium sm:px-4 sm:py-3">Unit</th>
+                <th className="px-3 py-2.5 font-medium sm:px-4 sm:py-3">Team</th>
                 <th className="hidden px-3 py-3 font-medium sm:table-cell">Acct</th>
                 <th className="px-2 py-2.5 text-right font-medium sm:px-3 sm:py-3">
                   R1 score
@@ -81,7 +81,7 @@ export default async function AdminTeamsPage({
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-4 py-10 text-center text-dim">
-                    No units registered.
+                    No teams registered.
                   </td>
                 </tr>
               ) : (

@@ -41,7 +41,7 @@ export default async function AdminOverviewPage() {
     roundRows = [];
   }
 
-  const [unitCount, voteCount, qualifiedCount] = await Promise.all([
+  const [teamCount, voteCount, qualifiedCount] = await Promise.all([
     safeCount(db.select({ value: count() }).from(teams)),
     safeCount(db.select({ value: count() }).from(culpritVotes)),
     safeCount(
@@ -112,8 +112,8 @@ export default async function AdminOverviewPage() {
               </p>
             ) : null}
           </Panel>
-          <Panel title="Registered units">
-            <p className="font-display text-3xl font-semibold text-ink">{unitCount ?? "—"}</p>
+          <Panel title="Registered teams">
+            <p className="font-display text-3xl font-semibold text-ink">{teamCount ?? "—"}</p>
             <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
               qualified: {qualifiedCount ?? 0}
             </p>

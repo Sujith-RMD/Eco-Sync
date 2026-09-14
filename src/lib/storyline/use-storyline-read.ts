@@ -30,7 +30,7 @@ export interface StorylineReadState {
  * `localStorage`, which means the server render cannot see it. The hook renders
  * the safe snapshot first (no badge, so no hydration mismatch) and settles on
  * the device's real position immediately after, which is also what lets a
- * second tab of the same unit stay in step.
+ * second tab of the same team stay in step.
  */
 export function useStorylineRead(summary: StorylineSummary): StorylineReadState {
   const { roundCode, teamName, size, firstProgressIndex, startedAt } = summary;

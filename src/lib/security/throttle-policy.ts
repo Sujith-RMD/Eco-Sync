@@ -25,22 +25,22 @@ export interface BudgetVerdict {
 
 export const SIGNIN_POLICIES = {
   /**
-   * Guesses against ONE unit's access code before that unit is paused. This is
+   * Guesses against ONE team's access code before that team is paused. This is
    * the control that actually protects a code, because it is attached to the
    * credential rather than to wherever the request came from.
    */
   teamCredential: { limit: 5, windowMs: 5 * 60_000 },
   /**
    * Backstop for one very noisy source address. It is deliberately far above
-   * what a room full of honest typos costs: seventy-five units each mistyping
+   * what a room full of honest typos costs: seventy-five teams each mistyping
    * three times is 225 failures sharing one venue egress address, and none of
    * them may be locked out.
    *
-   * Sized at 600 rather than 240 because the room grew: at 75 units, 240 left
-   * only 15 failures of headroom, so one extra fat-fingered code per unit
-   * (75 x 4 = 300) would have refused every unit for the rest of the window —
+   * Sized at 600 rather than 240 because the room grew: at 75 teams, 240 left
+   * only 15 failures of headroom, so one extra fat-fingered code per team
+   * (75 x 4 = 300) would have refused every team for the rest of the window —
    * including the ones typing their code correctly. 600 absorbs eight typos
-   * per unit. Raising this does not weaken code protection, which the
+   * per team. Raising this does not weaken code protection, which the
    * per-credential budget above owns.
    */
   teamSource: { limit: 600, windowMs: 5 * 60_000 },

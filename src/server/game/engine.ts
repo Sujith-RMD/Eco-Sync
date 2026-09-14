@@ -333,7 +333,7 @@ export async function submitAnswer(input: {
   if (roundCode === "ROUND_2") {
     const participation = await findParticipation(teamId, round.id);
     if (!participation) {
-      return { outcome: "NOT_QUALIFIED", message: "Your unit did not qualify for Round 02." };
+      return { outcome: "NOT_QUALIFIED", message: "Your team did not qualify for Round 02." };
     }
   }
 
@@ -646,7 +646,7 @@ export async function castVote(input: {
   /*
     Voting deliberately outlives the round. `endRound` is the operator's natural
     move the instant the clock reaches 75:00, and it used to close the ballot —
-    so a unit that broke the final code at minute 74 lost the game's finale to an
+    so a team that broke the final code at minute 74 lost the game's finale to an
     act of housekeeping, permanently, with no override anywhere in the deck.
 
     The ballot therefore stays open through ENDED, and closes only when the event
@@ -665,7 +665,7 @@ export async function castVote(input: {
 
   const participation = await findParticipation(teamId, round.id);
   if (!participation) {
-    return { outcome: "NOT_QUALIFIED", message: "Your unit did not qualify for Round 02." };
+    return { outcome: "NOT_QUALIFIED", message: "Your team did not qualify for Round 02." };
   }
 
   const finalPuzzle = await db.query.puzzles.findFirst({
@@ -694,7 +694,7 @@ export async function castVote(input: {
     .returning({ id: culpritVotes.id });
 
   if (inserted.length === 0) {
-    return { outcome: "DUPLICATE", message: "Your unit's vote is already sealed." };
+    return { outcome: "DUPLICATE", message: "Your team's vote is already sealed." };
   }
 
   await logAudit({
@@ -877,7 +877,7 @@ export async function startRound(
       .from(roundParticipations)
       .where(eq(roundParticipations.roundId, round.id));
     if (participants.length === 0) {
-      return { ok: false, message: "No qualified units. Run QUALIFY TOP 15 first." };
+      return { ok: false, message: "No qualified teams. Run QUALIFY TOP 15 first." };
     }
   }
 
@@ -885,7 +885,7 @@ export async function startRound(
     Fail closed on content that cannot be completed. An un-armed answer strands
     every link behind it (the chain unseals `orderIndex + 1` by exact match), and
     an empty chain strands the whole round, so neither may be opened — the
-    operator is told which links to fix rather than discovering it from 60 rooms.
+    operator is told which links to fix rather than discovering it from 61 rooms.
   */
   const answerAudit = await auditRoundAnswers(round.id);
   const roundLabel = code === "ROUND_1" ? "Round 01" : "Round 02";
@@ -974,10 +974,10 @@ export async function applyQualification(
     is over and before Round 02 has begun. Both halves of that are load-bearing:
 
     - Pressed while Round 01 is live, it ranks a partial field and — because the
-      round state machine is one-way — ends the round for all 60 units mid-play
+      round state machine is one-way — ends the round for all 61 teams mid-play
       with no way back. It used to do that silently.
     - Pressed while Round 02 is live, it deletes and rebuilds the Round 2 roster
-      from the *current* Round 1 standings, so any unit whose rank has moved is
+      from the *current* Round 1 standings, so any team whose rank has moved is
       ejected from a round it is already playing.
 
     Neither is recoverable from the command deck, so the operator is refused
@@ -1042,11 +1042,11 @@ export async function applyQualification(
     entityId: "ROUND_1",
     meta: { qualifiedCount: qualified, teamsRanked: standings.length },
   });
-  return { ok: true, message: `Qualification applied. Top ${qualified} units marked; Round 02 roster rebuilt.` };
+  return { ok: true, message: `Qualification applied. Top ${qualified} teams marked; Round 02 roster rebuilt.` };
 }
 
 /* -------------------------------------------------------------------------- */
-/* Admin repair — one unit, one link                                           */
+/* Admin repair — one team, one link                                           */
 /* -------------------------------------------------------------------------- */
 
 export type RepairOutcome =
@@ -1058,14 +1058,14 @@ export type RepairOutcome =
   | "PUZZLE_AMBIGUOUS";
 
 /**
- * The operator's one surgical lever: open a single link of a single unit's
- * chain, leaving every other unit untouched.
+ * The operator's one surgical lever: open a single link of a single team's
+ * chain, leaving every other team untouched.
  *
  * Why this exists. The chain unseals `orderIndex + 1` by exact match, so when a
- * link is unpassable for one unit — a briefing read the wrong way, a physical
- * prop that has gone missing, a puzzle edited after the round opened — that unit
+ * link is unpassable for one team — a briefing read the wrong way, a physical
+ * prop that has gone missing, a puzzle edited after the round opened — that team
  * is dead for the rest of the round. Until now the only levers were RESTART
- * (wipes all 60 units) and PURGE (wipes the event), so one stuck team was never
+ * (wipes all 61 teams) and PURGE (wipes the event), so one stuck team was never
  * a small problem: it was an all-or-nothing call taken live, in front of the
  * room. This turns that into a five-second fix.
  *
@@ -1077,10 +1077,10 @@ export type RepairOutcome =
  * - It never clears wrong-answer penalties. Those are already immutable ledger
  *   rows; forgiving them would change a *score*, and scores are what the ranking
  *   is built from. This changes *state* only.
- * - It touches no other unit, no other link, and not the round clock.
+ * - It touches no other team, no other link, and not the round clock.
  *
  * The state change is recorded twice: a `MANUAL_ADJUSTMENT` row at `delta: 0`
- * in the unit's own ledger, so the chain of custody can explain how this unit
+ * in the team's own ledger, so the chain of custody can explain how this team
  * got past a link it never solved, and an `audit_logs` row naming the operator.
  * `delta: 0` is the point — this repairs progression, it does not award points.
  */
@@ -1095,7 +1095,7 @@ export async function unlockPuzzleForTeam(input: {
 
   const team = await db.query.teams.findFirst({ where: eq(teams.id, teamId) });
   if (!team) {
-    return { outcome: "TEAM_UNKNOWN", message: `No unit with id ${teamId}.` };
+    return { outcome: "TEAM_UNKNOWN", message: `No team with id ${teamId}.` };
   }
 
   /*
@@ -1127,7 +1127,7 @@ export async function unlockPuzzleForTeam(input: {
   const result = await db.transaction(
     async (tx): Promise<{ outcome: RepairOutcome; message: string }> => {
       // Same row-lock pattern as `submitAnswer`, so a repair cannot interleave
-      // with the unit's own submission on the link being opened.
+      // with the team's own submission on the link being opened.
       const locked = await tx.execute(
         sql`select id, status from team_puzzle_progress
             where team_id = ${teamId} and puzzle_id = ${puzzle.id}

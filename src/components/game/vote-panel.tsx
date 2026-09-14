@@ -41,7 +41,7 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-acid" />
           <div className="space-y-1">
             <p className="font-mono text-[12px] uppercase tracking-[0.2em] text-acid">
-              Your unit&apos;s verdict is sealed
+              Your team&apos;s verdict is sealed
             </p>
             <p className="font-display text-xl font-semibold text-ink">
               {chosen?.name ?? "—"}
@@ -66,7 +66,7 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-dim" />
           <div className="min-w-0 space-y-3">
             <p className="font-mono text-[12px] leading-relaxed text-mist">
-              The culprit vote is sealed. It unseals the moment your unit breaks
+              The culprit vote is sealed. It unseals the moment your team breaks
               the final code on the Answers tab.
             </p>
             <p className="font-mono text-[11px] leading-relaxed text-dim">
@@ -95,8 +95,8 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
       <form action={formAction} className="space-y-5">
         <p className="font-mono text-[12px] leading-relaxed text-mist">
           Every evidence chain converges on one insider. Select your suspect,
-          then seal the verdict. Your unit gets exactly one vote — timestamped,
-          permanent, and hidden from other units.
+          then seal the verdict. Your team gets exactly one vote — timestamped,
+          permanent, and hidden from other teams.
         </p>
 
         <div

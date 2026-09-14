@@ -157,7 +157,7 @@ describe("buildStoryline", () => {
     expect(storyline.size).toBe(storyline.beats.length);
   });
 
-  it("only reports what the unit actually paid for on a broken link", () => {
+  it("only reports what the team actually paid for on a broken link", () => {
     const clean = buildStoryline(
       snapshot({
         puzzles: [
@@ -256,7 +256,7 @@ describe("reading cursor", () => {
     ]);
     // Same progress re-rendered by auto-refresh → nothing to flag.
     expect(selectUnreadBeats(progressed, 3)).toEqual([]);
-    // Never opened → only the unit's own progress counts as unread.
+    // Never opened → only the team's own progress counts as unread.
     expect(selectUnreadBeats(progressed, null)).toHaveLength(2);
     expect(selectUnreadBeats(openedOnly, null)).toEqual([]);
   });

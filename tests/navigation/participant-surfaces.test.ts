@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 /**
  * Participant/admin separation, checked at the source level.
  *
- * The requirement is that standings are never reachable from the unit-facing
+ * The requirement is that standings are never reachable from the team-facing
  * app — not that they are visually hidden. A test that rendered a component and
  * looked for a link would only prove the current markup; this asserts the weaker
  * but more durable property: no participant surface references the route at all,
@@ -29,7 +29,7 @@ function sourcesIn(directory: string): string[] {
   return out;
 }
 
-/** Every file a signed-in unit can be shown, chrome included. */
+/** Every file a signed-in team can be shown, chrome included. */
 const PARTICIPANT_SURFACES = [
   "src/app/team",
   "src/app/lobby",

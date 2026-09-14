@@ -18,7 +18,7 @@ export interface TeamRoundContext {
   teamName: string;
   result: TeamSnapshotResult;
   bundle: StorylineBundle;
-  /** Null until the round is actually visible to this unit. */
+  /** Null until the round is actually visible to this team. */
   progress: RoundProgress | null;
 }
 

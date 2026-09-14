@@ -51,7 +51,7 @@ export function TeamShell({
     <div className="relative flex min-h-dvh flex-col">
       <Backdrop />
       <Topbar>
-        <StatusPill tone="ok" label={`unit // ${teamName}`} />
+        <StatusPill tone="ok" label={`team // ${teamName}`} />
         <StatusPill tone="muted" label={ROUND_LABEL[round]} staticDot />
         <Link
           href="/lobby"

@@ -25,7 +25,7 @@ interface StorylineToastProps {
  * Announces that the case file gained content, and points at it.
  *
  * Fired only by an accepted submission (see `emitStorylineSignal` in the answer
- * form), never by a wrong one, and it re-arms rather than stacking: a unit that
+ * form), never by a wrong one, and it re-arms rather than stacking: a team that
  * solves twice gets one visible notice, which is what "no duplicate
  * notifications for the same unlock" means from the client's side.
  *

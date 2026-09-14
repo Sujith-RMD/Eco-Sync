@@ -65,8 +65,8 @@ export function RoundStateView({ result }: { result: TeamSnapshotResult }) {
             <div className="space-y-4">
               <p className="font-mono text-[12px] leading-relaxed text-mist">
                 {result.reason === "AWAITING_QUALIFICATION"
-                  ? "Qualification has not been finalized. Only the top 15 units of Round 01 breach this perimeter — stand by for the official cut."
-                  : "Your unit did not qualify for Round 02. The custody chain thanks you for a clean investigation."}
+                  ? "Qualification has not been finalized. Only the top 15 teams of Round 01 breach this perimeter — stand by for the official cut."
+                  : "Your team did not qualify for Round 02. The custody chain thanks you for a clean investigation."}
               </p>
               <Link
                 href="/lobby"

@@ -270,7 +270,7 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
         {puzzle.kind === "PHYSICAL_CHECKPOINT" && puzzle.status === "UNLOCKED" ? (
           <div className="flex items-start gap-2.5 border border-pulse/40 bg-pulse/10 px-3.5 py-3 font-mono text-[12px] leading-relaxed text-pulse">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-            Physical checkpoint — your unit must interact with a location in the
+            Physical checkpoint — your team must interact with a location in the
             venue before entering this code.
           </div>
         ) : null}
@@ -473,7 +473,7 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
             ) : null}
             {/*
               Only the *chain* closes at END. The culprit ballot stays open, and
-              a unit that reads "submissions closed" and walks away would forfeit
+              a team that reads "submissions closed" and walks away would forfeit
               the finale it just earned the right to cast — so the banner has to
               say which of the two is which.
             */}
@@ -481,7 +481,7 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
               <p className="font-mono text-[11px] leading-relaxed text-dim">
                 {snapshot.vote?.unlocked
                   ? "Your verdict is still open — the ballot on the Suspects tab stays live after the round ends."
-                  : "The culprit ballot stays sealed. Only a unit that broke the final code may vote."}
+                  : "The culprit ballot stays sealed. Only a team that broke the final code may vote."}
               </p>
             ) : null}
           </div>
@@ -554,7 +554,7 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
 
       {/*
         The verdict no longer lives here. It is about the suspects, so it sits on
-        the Suspects tab — but a unit that has just broken the final code must be
+        the Suspects tab — but a team that has just broken the final code must be
         told where to take it, or the round ends with nobody voting.
       */}
       {snapshot.vote && !snapshot.vote.submitted ? (

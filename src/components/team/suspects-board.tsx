@@ -66,7 +66,7 @@ function DossierRow({
         {isVerdict ? (
           <p className="flex items-center gap-1.5 pt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-alert">
             <Gavel className="h-3 w-3" />
-            your unit&apos;s sealed verdict
+            your team&apos;s sealed verdict
           </p>
         ) : null}
       </div>
@@ -78,9 +78,9 @@ function DossierRow({
  * Suspect dossiers.
  *
  * Everything on this screen comes from `VoteSnapshot`, which the engine already
- * assembles — the roster, and the unit's own sealed verdict. Nothing is added:
+ * assembles — the roster, and the team's own sealed verdict. Nothing is added:
  * no evidence columns, no threat ratings, no per-person status the game does not
- * already publish, because inventing those would hand units facts the supplied
+ * already publish, because inventing those would hand teams facts the supplied
  * documents do not contain.
  *
  * In Round 01 the engine sends no roster at all, so this tab says so rather
@@ -105,7 +105,7 @@ export function SuspectsBoard({ round, vote }: SuspectsBoardProps) {
             <p className="font-mono text-[12px] leading-relaxed text-mist">
               Command holds the suspect roster. Round 01 recovers the breach
               itself — the people who could have done it are named in the next
-              phase, once the field is cut to the qualifying units.
+              phase, once the field is cut to the qualifying teams.
             </p>
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim sm:tracking-[0.24em]">
               No subjects to examine in this round.
@@ -160,7 +160,7 @@ export function SuspectsBoard({ round, vote }: SuspectsBoardProps) {
         <p className="flex items-start gap-2.5 font-mono text-[11px] leading-relaxed text-dim">
           <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           Roles are the only particulars command has released on these subjects.
-          Statements, logs and the newspaper are physical evidence — your unit
+          Statements, logs and the newspaper are physical evidence — your team
           reads them in the room, and nothing here paraphrases them.
         </p>
         {!vote.submitted && !vote.unlocked ? (

@@ -218,11 +218,11 @@ async function main() {
   const p60 = await db.query.roundParticipations.findFirst({
     where: and(eq(roundParticipations.teamId, t60.id), eq(roundParticipations.roundId, r1!.id)),
   });
-  expect(p1?.qualified === true && p1.finalRank === 1, "top unit marked qualified at rank #1");
-  expect(p60?.qualified === false, "idle unit marked eliminated");
+  expect(p1?.qualified === true && p1.finalRank === 1, "top team marked qualified at rank #1");
+  expect(p60?.qualified === false, "idle team marked eliminated");
 
   const gated = await getTeamRoundSnapshot(t60.id, t60.name, "ROUND_2");
-  expect(gated.kind === "gated" && gated.reason === "NOT_QUALIFIED", "non-qualified unit cannot enter round 02");
+  expect(gated.kind === "gated" && gated.reason === "NOT_QUALIFIED", "non-qualified team cannot enter round 02");
 
   const start2 = await startRound(admin!.id, "ROUND_2");
   expect(start2.ok, "round 02 starts for the qualified roster");

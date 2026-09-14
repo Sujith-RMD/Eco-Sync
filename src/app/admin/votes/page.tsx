@@ -60,7 +60,7 @@ export default async function AdminVotesPage() {
             <table className="w-full font-mono text-[11px] sm:min-w-[560px] sm:text-[12px]">
               <thead>
                 <tr className="border-b border-line/70 text-left text-[9px] uppercase tracking-[0.12em] text-dim sm:text-[10px] sm:tracking-[0.22em]">
-                  <th className="px-3 py-2 font-medium">Unit</th>
+                  <th className="px-3 py-2 font-medium">Team</th>
                   <th className="px-2 py-2 font-medium sm:px-3 sm:py-2">
                     Verdict
                   </th>

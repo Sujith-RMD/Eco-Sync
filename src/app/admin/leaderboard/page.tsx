@@ -41,7 +41,7 @@ export default async function AdminLeaderboardPage() {
               <thead>
                 <tr className="border-b border-line/70 text-left text-[9px] uppercase tracking-[0.1em] text-dim sm:text-[10px] sm:tracking-[0.22em]">
                   <th className="px-2 py-2 font-medium sm:px-3">Rank</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Unit</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Team</th>
                   <th className="px-2 py-2 text-right font-medium sm:px-3 sm:text-right">
                     Score
                   </th>
@@ -111,7 +111,7 @@ export default async function AdminLeaderboardPage() {
               <thead>
                 <tr className="border-b border-line/70 text-left text-[9px] uppercase tracking-[0.1em] text-dim sm:text-[10px] sm:tracking-[0.22em]">
                   <th className="px-2 py-2 font-medium sm:px-3">Rank</th>
-                  <th className="px-2 py-2 font-medium sm:px-3">Unit</th>
+                  <th className="px-2 py-2 font-medium sm:px-3">Team</th>
                   <th className="px-2 py-2 text-right font-medium sm:px-3">
                     Score
                   </th>

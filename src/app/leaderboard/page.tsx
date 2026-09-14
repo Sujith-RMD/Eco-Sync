@@ -12,9 +12,9 @@ export const metadata = {
  * its own — it resolves the session and sends each subject to where they belong.
  *
  * The route exists solely so a bookmarked or printed `/leaderboard` link cannot
- * dead-end a unit mid-round; nothing below can render a score, because nothing
+ * dead-end a team mid-round; nothing below can render a score, because nothing
  * here calls a standings query at all. Operators land on the command-deck board,
- * units go back to their lobby, and an anonymous visitor is asked to identify
+ * teams go back to their lobby, and an anonymous visitor is asked to identify
  * itself first — a hall screen with no session gets a login page, not a feed.
  */
 export default async function LegacyStandingsPage() {

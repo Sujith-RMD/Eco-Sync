@@ -123,7 +123,7 @@ export async function seedEventAction(
     revalidatePath("/admin");
     return {
       status: "ok",
-      message: `Event seeded: ${result.teamCount} units, ${result.puzzleCounts.round1} + ${result.puzzleCounts.round2} puzzles, 1 operator. Distribute credentials below.`,
+      message: `Event seeded: ${result.teamCount} teams, ${result.puzzleCounts.round1} + ${result.puzzleCounts.round2} puzzles, 1 operator. Distribute credentials below.`,
       result,
     };
   } catch (error) {
@@ -191,13 +191,13 @@ export async function qualifyTop15Action(
  *
  * Deletes every scrap of play data (ledger, progression, attempts, hints,
  * verdicts, qualifications) and puts both rounds back to PENDING, while
- * KEEPING the units and the access codes already handed out, the puzzle chain,
+ * KEEPING the teams and the access codes already handed out, the puzzle chain,
  * the operators and the audit trail. The same credential slips work again: no
  * re-seeding, no re-printing.
  *
  * Despite the immutable-ledger design this is safe, because progression rows
  * are created lazily by `getTeamRoundSnapshot` (`onConflictDoNothing`) instead
- * of being seeded — so each unit's chain rebuilds itself as soon as a round is
+ * of being seeded — so each team's chain rebuilds itself as soon as a round is
  * started again. Team sessions are dropped so a leftover open tab cannot carry
  * a previous run's identity into the replay.
  */
@@ -240,7 +240,7 @@ export async function restartEventAction(
     };
   }
 
-  const [{ n: unitCount }] = await db.select({ n: count() }).from(teams);
+  const [{ n: teamCount }] = await db.select({ n: count() }).from(teams);
 
   const wiped = await db.transaction(async (tx) => {
     const votes = await tx.select({ n: count() }).from(culpritVotes);
@@ -260,7 +260,7 @@ export async function restartEventAction(
     await tx.delete(scoreEvents);
     await tx.delete(roundParticipations);
     await tx.delete(sessions).where(eq(sessions.subject, "TEAM"));
-    // A reset also releases any unit paused by the sign-in throttle, so an
+    // A reset also releases any team paused by the sign-in throttle, so an
     // operator can always unstick the room from the same button.
     const throttled = await tx
       .delete(authThrottle)
@@ -287,7 +287,7 @@ export async function restartEventAction(
     entity: "round",
     meta: {
       wiped,
-      kept: { units: unitCount, accessCodes: true, rounds: true, puzzles: true },
+      kept: { teams: teamCount, accessCodes: true, rounds: true, puzzles: true },
       roundsResetTo: "PENDING",
     },
     ip,
@@ -307,10 +307,10 @@ export async function restartEventAction(
   return {
     status: "ok",
     message:
-      `Event reset for replay. ${unitCount} units and their access codes kept. ` +
+      `Event reset for replay. ${teamCount} teams and their access codes kept. ` +
       `Cleared ${wiped.ledger} ledger events, ${wiped.progress} progression rows, ` +
       `${wiped.attempts} attempts, ${wiped.hints} hint uses, ${wiped.votes} verdicts. ` +
-      `Both rounds are PENDING and every unit has signed out — start Round 01 when ready.`,
+      `Both rounds are PENDING and every team has signed out — start Round 01 when ready.`,
   };
 }
 
@@ -405,18 +405,18 @@ const repairSchema = z.object({
 });
 
 /**
- * Open one link of one unit's chain.
+ * Open one link of one team's chain.
  *
  * Deliberately NOT behind a confirmation phrase, unlike RESTART and PURGE. This
  * is the action an operator reaches for *during* a live round, with a team
  * standing at the desk, and the cost of a mistype is nil: it cannot retract a
  * solved link, cannot change a score (the ledger entry it writes is `delta: 0`),
- * and cannot touch another unit. Making it prove intent would only make the
+ * and cannot touch another team. Making it prove intent would only make the
  * stuck team wait longer.
  *
  * It is also deliberately not rate-limited. The destructive actions are, but
  * this one is idempotent and non-destructive, and the realistic worst case is an
- * operator fixing several units in quick succession.
+ * operator fixing several teams in quick succession.
  */
 export async function unlockPuzzleForTeamAction(
   _previous: AdminActionState,
@@ -440,7 +440,7 @@ export async function unlockPuzzleForTeamAction(
 
   /*
     "Already open" and "already solved" are refusals to act, not failures — the
-    unit is fine and nothing was changed, so they read as neutral, not as an
+    team is fine and nothing was changed, so they read as neutral, not as an
     error the operator has to chase down.
   */
   const acted = result.outcome === "UNLOCKED";
@@ -448,7 +448,7 @@ export async function unlockPuzzleForTeamAction(
     result.outcome === "ALREADY_OPEN" || result.outcome === "ALREADY_SOLVED";
 
   if (acted) {
-    // The unit's own page shows the new progression row and ledger entry; the
+    // The team's own page shows the new progression row and ledger entry; the
     // roster and the standings both move with it.
     revalidatePath(`/admin/teams/${parsed.data.teamId}`);
     revalidatePath("/admin/teams");

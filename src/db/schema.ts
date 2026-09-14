@@ -352,13 +352,13 @@ export const auditLogs = pgTable(
  * module-level Map: an event may run several server instances or cold-start on
  * serverless, where in-memory counters reset and stop protecting anything. Only
  * FAILURES are stored, and the primary budget hangs off the credential, so
- * sixty units signing in from one shared venue address cannot exhaust each
+ * sixty-one teams signing in from one shared venue address cannot exhaust each
  * other's allowance the way a per-IP attempt counter did.
  */
 export const authThrottle = pgTable(
   "auth_throttle",
   {
-    /** e.g. `team-code:unit-01` or `ip:203.0.113.9`. */
+    /** e.g. `team-code:team#8210` or `ip:203.0.113.9`. */
     key: varchar("key", { length: 160 }).primaryKey(),
     failures: integer("failures").notNull().default(0),
     /** When this fixed window closes. A past row counts as an empty budget. */

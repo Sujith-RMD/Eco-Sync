@@ -12,7 +12,7 @@ import { isUnarmedAnswer, type UnarmedPuzzle } from "./unarmed";
  * Why the guard runs at all: Round 2's chain unseals `orderIndex + 1` by exact
  * match, so a placeholder answer does not stall one link, it strands everything
  * behind it — the final code, and the culprit vote that code unseals. Opening
- * such a round gives 60 rooms a wall and no explanation.
+ * such a round gives 61 rooms a wall and no explanation.
  */
 export async function auditRoundAnswers(
   roundId: number,

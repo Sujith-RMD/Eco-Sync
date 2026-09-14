@@ -12,7 +12,7 @@ export default function RoundTwoAnswersPage() {
     <AnswersTab
       round="ROUND_2"
       meta={{
-        eyebrow: "Round 02 // 15 units // 3 prevail",
+        eyebrow: "Round 02 // 15 teams // 3 prevail",
         title: "CULPRIT TRAIL",
       }}
     />

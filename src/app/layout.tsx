@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s — ECO-SYNC: THE BREACH",
   },
   description:
-    "Live cybersecurity investigation protocol. Sixty units enter a compromised facility. Fifteen advance. Three expose the insider.",
+    "Live cybersecurity investigation protocol. Sixty-one teams enter a compromised facility. Fifteen advance. Three expose the insider.",
   robots: { index: false, follow: false },
 };
 
@@ -45,7 +45,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             Analytics     — page views and visitors.
             SpeedInsights — real-user Core Web Vitals (LCP / CLS / INP) from the
                             actual handsets in the venue, which is the number
-                            worth having before 60 devices arrive at once.
+                            worth having before 61 devices arrive at once.
 
           Both keep their default reporting modes, so a real deployment measures
           production traffic. Enable each in the project's Vercel dashboard; the

@@ -194,7 +194,7 @@ function PurgeForm() {
 
 /**
  * RESTART is the everyday "run this event again" control. PURGE is still
- * reachable, but only inside a collapsed disclosure — it also destroys the 60
+ * reachable, but only inside a collapsed disclosure — it also destroys the 61
  * access codes the room is currently holding.
  */
 function RestartForm() {
@@ -208,9 +208,9 @@ function RestartForm() {
         Round 02 back to PENDING.
       </p>
       <p className="font-mono text-[11px] leading-relaxed text-dim">
-        <span className="text-acid">Kept</span>: every unit and the access codes
+        <span className="text-acid">Kept</span>: every team and the access codes
         already handed out, the puzzle chain, operators and the audit trail.
-        Units sign in again with the same code and get a clean board.
+        Teams sign in again with the same code and get a clean board.
       </p>
 
       <form action={formAction} className="space-y-3">
@@ -227,14 +227,14 @@ function RestartForm() {
         </Button>
         <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-dim sm:tracking-[0.18em]">
           Guarded: refused while a round is live — end it first. Also releases
-          any unit paused for too many wrong codes.
+          any team paused for too many wrong codes.
         </p>
         <ActionMessage state={state} />
       </form>
 
       <details className="border-t border-line/60 pt-3">
         <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.12em] text-dim transition-colors hover:text-alert sm:tracking-[0.2em]">
-          Full purge — also deletes units and access codes
+          Full purge — also deletes teams and access codes
         </summary>
         <p className="mb-3 mt-2 font-mono text-[11px] leading-relaxed text-dim">
           Only for building a brand-new event. This destroys the rounds, the
@@ -255,7 +255,7 @@ function SeedForm() {
   const [copied, setCopied] = useState(false);
 
   const credentialList = state.result?.teams ?? [];
-  const csv = ["unit,access_code", ...credentialList.map((t) => `${t.name},${t.accessCode}`)].join("\n");
+  const csv = ["team_id,access_code", ...credentialList.map((t) => `${t.name},${t.accessCode}`)].join("\n");
 
   return (
     <div className="space-y-4">
@@ -302,7 +302,7 @@ function SeedForm() {
             <table className="w-full font-mono text-[11px]">
               <thead className="sticky top-0 bg-abyss-900">
                 <tr className="text-left text-[10px] uppercase tracking-[0.2em] text-dim">
-                  <th className="px-3 py-2 font-medium">Unit</th>
+                  <th className="px-3 py-2 font-medium">Team</th>
                   <th className="px-3 py-2 font-medium">Access code</th>
                 </tr>
               </thead>

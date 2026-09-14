@@ -12,7 +12,7 @@ export default function RoundOneAnswersPage() {
     <AnswersTab
       round="ROUND_1"
       meta={{
-        eyebrow: "Round 01 // 61 units // top 15 advance",
+        eyebrow: "Round 01 // 61 teams // top 15 advance",
         title: "THE BREACH",
       }}
     />

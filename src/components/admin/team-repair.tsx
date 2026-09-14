@@ -61,11 +61,11 @@ function Message({ state }: { state: AdminActionState }) {
 }
 
 /**
- * The per-unit unstick lever.
+ * The per-team unstick lever.
  *
  * Round 2's chain unseals `orderIndex + 1` by exact match, so one unpassable
- * link takes a unit out of the round entirely — and before this existed the only
- * repairs on the deck were RESTART (all 60 units) and PURGE (the whole event).
+ * link takes a team out of the round entirely — and before this existed the only
+ * repairs on the deck were RESTART (all 61 teams) and PURGE (the whole event).
  * A single stuck team used to force an all-or-nothing decision, live.
  *
  * The copy states the limits on the card because an operator reaching for this
@@ -98,12 +98,12 @@ export function TeamRepairPanel({
         <p className="font-mono text-[11px] leading-relaxed text-mist">
           Use this when {teamName} is stuck on a link the room has moved past —
           a missing prop, a briefing read the wrong way. It opens the link so the
-          unit can carry on.
+          team can carry on.
         </p>
 
         <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-dim sm:tracking-[0.16em]">
           Awards no points · retracts none · leaves wrong-answer penalties ·
-          touches no other unit
+          touches no other team
         </p>
 
         <form action={formAction} className="space-y-3">

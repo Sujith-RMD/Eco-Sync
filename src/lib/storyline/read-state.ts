@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * Storyline reading position, per unit and per round.
+ * Storyline reading position, per team and per round.
  *
  * The database is the source of truth for *progress* — `team_puzzle_progress`
  * already knows which links are broken and when, and the case file is derived
  * from it. What the database deliberately does not know is whether a given
  * handset has *looked at* the file yet, because that is a property of a device,
- * not of the team: two phones in one unit read at their own pace. So progress
+ * not of the team: two phones in one team read at their own pace. So progress
  * arrives from the server with every snapshot, and only this reading position
  * is kept locally — the same contract a messaging client's "read" marker has.
  *
  * Nothing here can grant or hide content, and no answer, score or briefing is
- * stored. Losing the entry is harmless: the worst case is that a unit sees the
+ * stored. Losing the entry is harmless: the worst case is that a team sees the
  * "new information" marker once more.
  */
 
@@ -117,7 +117,7 @@ export function setStorylineCursor(
 /**
  * How many beats deserve a "new information" flag.
  *
- * `floor` is the index of the first beat the unit's own investigation produced:
+ * `floor` is the index of the first beat the team's own investigation produced:
  * the round-opening directive is handed over before anyone acts, so flagging it
  * as a discovery would put a badge on the tab before there is anything to read.
  */

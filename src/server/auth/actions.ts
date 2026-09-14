@@ -19,7 +19,7 @@ import { adminLoginSchema, teamLoginSchema } from "@/lib/validation/auth";
 import { logAudit } from "@/server/audit/log";
 import type { AuthActionState } from "@/types/auth";
 
-const DENIED_TEAM = "Access denied. Verify the unit designation and access code.";
+const DENIED_TEAM = "Access denied. Verify the team designation and access code.";
 const DENIED_ADMIN = "Access denied. Verify operator credentials.";
 const NOT_INITIALIZED =
   "System is not initialized. Contact the event coordinators.";
@@ -41,7 +41,7 @@ export async function loginTeam(
   const userAgent = await getUserAgent();
 
   // Only failures are counted, and the tight budget belongs to the credential —
-  // so sixty units signing in through one venue egress address cannot exhaust
+  // so sixty-one teams signing in through one venue egress address cannot exhaust
   // each other's allowance, which a per-IP attempt counter did.
   const gate = await guardTeamSignIn(teamName, ip);
   if (!gate.allowed) {
@@ -114,7 +114,7 @@ export async function loginTeam(
   });
 
   await createSession({ subject: "TEAM", teamId: team.id, ip, userAgent });
-  // This unit is proven; drop its typo history so it starts the round clean.
+  // This team is proven; drop its typo history so it starts the round clean.
   await noteTeamSignInSuccess(teamName);
   redirect("/lobby");
 }

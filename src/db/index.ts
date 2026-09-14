@@ -37,7 +37,7 @@ const globalForDb = globalThis as typeof globalThis & {
  *
  * `max: 3`, not 10. This runs on Vercel, where every concurrent function
  * instance opens *its own* pool: 10 per instance multiplied by the dozens of
- * instances 60 units polling every few seconds can summon is how a game reaches
+ * instances 61 teams polling every few seconds can summon is how a game reaches
  * Supabase's connection ceiling at exactly the moment it matters — mid-round,
  * with everyone submitting at once. Three is enough for a single instance,
  * because each request here is a handful of short queries, and it keeps the

@@ -108,8 +108,8 @@ export default async function AdminTeamDetailPage({
       where: eq(culpritVotes.teamId, teamId),
     }),
     /*
-      Every link in both rounds, not just the ones this unit has progress rows
-      for: the whole point of the repair lever is to open a link the unit has
+      Every link in both rounds, not just the ones this team has progress rows
+      for: the whole point of the repair lever is to open a link the team has
       never reached, which by definition has no row to read from.
     */
     db
@@ -132,7 +132,7 @@ export default async function AdminTeamDetailPage({
   return (
     <AdminShell
       active="teams"
-      eyebrow={`Unit file // ${team.name}`}
+      eyebrow={`Team file // ${team.name}`}
       title={team.name}
       adminName={admin.username}
     >

@@ -6,13 +6,13 @@ import type { RoundSnapshot } from "@/types/game";
  * There is no separate narrative table, and inventing one would mean writing
  * story content the supplied documents don't contain. So the case file is
  * *derived* from state the server already returns: a puzzle's briefing is the
- * discovery that reaches the unit, and its `solvedAt` is the moment the chain
+ * discovery that reaches the team, and its `solvedAt` is the moment the chain
  * advanced. Everything rendered here therefore comes from `RoundSnapshot`,
  * which is already what the answer console renders — nothing hidden is
  * disclosed, and nothing new is authored.
  *
  * Locked puzzles contribute no beat at all, so the file cannot spoil a round
- * the unit has not reached; `PuzzleSnapshot.briefing` is null while locked even
+ * the team has not reached; `PuzzleSnapshot.briefing` is null while locked even
  * before this rule is applied.
  */
 
@@ -25,7 +25,7 @@ export type StorylineBeatKind =
 export interface StorylineBeat {
   /**
    * Stable across renders and refreshes, so read-state and React keys never
-   * re-trigger a notification for content the unit has already seen.
+   * re-trigger a notification for content the team has already seen.
    */
   id: string;
   kind: StorylineBeatKind;
@@ -119,7 +119,7 @@ export function buildStoryline(snapshot: RoundSnapshot): Storyline {
 }
 
 /**
- * Beats the unit has not read yet, given the stored cursor.
+ * Beats the team has not read yet, given the stored cursor.
  *
  * A cursor past the end (the operator restarted, so the chain shrank) yields no
  * unread beats rather than a phantom notification; a missing cursor means the
@@ -139,7 +139,7 @@ export function selectUnreadBeats(
 /**
  * Where a brand-new reader's cursor starts. The opening directive is what they
  * are handed before they act, so it is not "new information" that deserves a
- * badge; anything the unit's own solving produced is.
+ * badge; anything the team's own solving produced is.
  */
 export function firstProgressIndex(storyline: Storyline): number {
   const index = storyline.beats.findIndex(

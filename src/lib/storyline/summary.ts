@@ -7,7 +7,7 @@ import type { RoundCode, RoundSnapshot, TeamSnapshotResult } from "@/types/game"
 
 /**
  * The minimum the navigation needs to light its badge: how long the case file
- * is, where the unit's own discoveries begin, and which round opening the
+ * is, where the team's own discoveries begin, and which round opening the
  * reading position belongs to. Passing this instead of the full beat list keeps
  * every payload a page already computes.
  */
@@ -21,7 +21,7 @@ export interface StorylineSummary {
 
 export interface StorylineBundle {
   summary: StorylineSummary;
-  /** Null when the round has not opened for this unit yet. */
+  /** Null when the round has not opened for this team yet. */
   storyline: Storyline | null;
 }
 
@@ -40,7 +40,7 @@ function summaryOf(
   };
 }
 
-/** Case file for a live or completed round the unit can see. */
+/** Case file for a live or completed round the team can see. */
 export function buildStorylineBundle(
   snapshot: RoundSnapshot,
   roundCode: RoundCode,
@@ -55,7 +55,7 @@ export function buildStorylineBundle(
 
 /**
  * Case file for every non-ready state (standby, gated, unseeded). The badge
- * stays dark because there is nothing the unit's own work has produced; the
+ * stays dark because there is nothing the team's own work has produced; the
  * page still renders, so the tab never disappears mid-round.
  */
 export function buildPendingStorylineBundle(

@@ -2,7 +2,7 @@
  * Pure half of the content guard: recognise a placeholder answer and explain it.
  *
  * Kept free of `server-only` and of the database so the rule that decides
- * whether 60 teams can play a round is the rule under test. That is also why
+ * whether 61 teams can play a round is the rule under test. That is also why
  * `UNARMED_SENTINEL` is declared here rather than in `./catalogue`: the
  * catalogue is guarded now, and importing it would drag that guard in behind
  * the one module the tests have to be able to load.
