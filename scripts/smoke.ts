@@ -1,13 +1,24 @@
 /**
  * End-to-end engine smoke rehearsal (run manually against a live database):
  *
- *   NODE_OPTIONS="--conditions=react-server" npx tsx scripts/smoke.ts
+ *   CONFIRM_SMOKE=yes NODE_OPTIONS="--conditions=react-server" \
+ *     npx tsx scripts/smoke.ts
  *
  * Boots a full event from scratch, plays a team through Round 1 and Round 2
  * using ONLY the real engine entry points, asserts every critical invariant
- * (lockouts, caps, qualification gating, envelope chain, final code, vote
+ * (lockouts, caps, qualification gating, puzzle chain, final code, vote
  * unsealing, duplicate-vote rejection), then wipes all data so the platform
  * returns to a pristine state.
+ *
+ * DESTRUCTIVE. This TRUNCATEs rounds, puzzles, teams, admins, sessions, the
+ * score ledger and the audit trail — on whichever database `DATABASE_URL`
+ * names. It is a local rehearsal tool only. The confirmation variable is not
+ * ceremony: without it, one stray `dotenv` in a shell that also holds the
+ * production connection string ends the event.
+ *
+ * It also refuses to run at all while any link is un-armed (see the preflight
+ * in `main`): submitting a placeholder answer would "solve" that door, so a
+ * rehearsal over un-armed content reports a full green while proving nothing.
  */
 import { sql } from "drizzle-orm";
 import { db, pool } from "@/db";
@@ -30,10 +41,13 @@ import {
   submitAnswer,
   claimHint,
 } from "@/server/game/engine";
-import { ROUND1_PUZZLES, ROUND2_PUZZLES, FINAL_CODE_PUZZLE_CODE } from "@/server/game/catalogue";
+import { ROUND1_PUZZLES, ROUND2_PUZZLES } from "@/server/game/catalogue";
+import { isUnarmedAnswer } from "@/server/game/unarmed";
 
 let passed = 0;
 let failed = 0;
+/** Set only once the run is really under way, so a refused run wipes nothing. */
+let started = false;
 
 function expect(condition: boolean, label: string) {
   if (condition) {
@@ -79,13 +93,55 @@ async function scoreFor(teamId: number, roundCode: string): Promise<number> {
 
 async function main() {
   console.log("— ECO-SYNC engine smoke rehearsal —\n");
+
+  /* preflight ------------------------------------------------------------- */
+  console.log("PREFLIGHT");
+
+  if (process.env.CONFIRM_SMOKE !== "yes") {
+    console.error(
+      "  ✗ Refusing to run without confirmation.\n" +
+        "    This script TRUNCATEs every table it touches, including teams,\n" +
+        "    operators and the audit trail. Re-run with CONFIRM_SMOKE=yes.\n",
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  /*
+    Every link must carry a real answer before anything is asserted. The loops
+    below submit each puzzle's own catalogue answer, so a placeholder would be
+    "solved" by the very value standing in for it: the run would go green while
+    proving nothing about that door. A false green is the one result a rehearsal
+    must never produce, so this refuses instead of reporting one.
+  */
+  const links = [...ROUND1_PUZZLES, ...ROUND2_PUZZLES];
+  const unarmed = links.filter((puzzle) => isUnarmedAnswer(puzzle.answer));
+  expect(unarmed.length === 0, `all ${links.length} links carry a real answer`);
+  if (unarmed.length > 0) {
+    console.error(
+      `    un-armed: ${unarmed
+        .map((puzzle) => `${puzzle.code} (position ${puzzle.orderIndex})`)
+        .join(", ")}`,
+    );
+    console.error("    Arm them first (S7: db/arm-s7.sql), then re-run.\n");
+    process.exitCode = 1;
+    return;
+  }
+
+  started = true;
   await wipe();
 
   /* seed ----------------------------------------------------------------- */
   console.log("SEED");
   const seed = await seedEvent({ adminUsername: "smoke-op", adminPassword: "dummy-passphrase-123" });
   expect(seed.teams.length === 60, "seeded 60 units");
-  expect(seed.puzzleCounts.round1 === 7 && seed.puzzleCounts.round2 === 11, "supplied puzzle catalogue seeded");
+  // Derived from the catalogue, not literals: a hardcoded count is what let
+  // this assertion sit at 11 for a Round 2 that had become 8 links.
+  expect(
+    seed.puzzleCounts.round1 === ROUND1_PUZZLES.length &&
+      seed.puzzleCounts.round2 === ROUND2_PUZZLES.length,
+    `seeded the supplied catalogue (${ROUND1_PUZZLES.length} + ${ROUND2_PUZZLES.length})`,
+  );
   const admin = await db.query.admins.findFirst({ where: eq(admins.username, "smoke-op") });
   expect(Boolean(admin), "operator account created");
   const t1 = (await db.query.teams.findFirst({ where: eq(teams.name, "UNIT-01") }))!;
@@ -213,6 +269,8 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await wipe().catch(() => undefined);
+    // Only clean up a database this run actually touched — a refused run must
+    // leave whatever was there alone.
+    if (started) await wipe().catch(() => undefined);
     await pool.end();
   });

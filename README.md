@@ -40,8 +40,10 @@ test-suite.
 
 - **Round 1** — 7 sequential puzzles, 40:00, +100 per puzzle (+150 final),
   hint −30, wrong −10 capped at −50/puzzle, +2/full minute. Max 830.
-- **Round 2** — S1 → Envelope A → S2 → Envelope B → S3…S8 → final code
-  (A1Z26 over water-data differences) → sealed culprit vote, 75:00.
+- **Round 2** — 8 links in play order: S1 → S3 → S4 → S5 → S6 → S7 → S8 →
+  `LAST` (the 150-point final code) → sealed culprit vote, 75:00. S7 is a
+  physical prop pair (`props/s7/`); its answer is authored and the QR codes are
+  generated from it, not read off them.
 - Tie-breaks: score → earlier finish → fewer wrong penalties → fewer hints
   → stable id. Round 2 winners: earliest final-code solve, then depth.
 
@@ -49,18 +51,25 @@ test-suite.
 
 ```
 src/
-  app/        landing · login · admin/(login, overview, teams/[id],
-              leaderboard, votes, audit) · lobby · team/round-1 ·
-              team/round-2 · leaderboard (public) · api/(health, leaderboard)
+  app/        landing · login · admin/(login, overview, teams, teams/[id],
+              leaderboard, votes, audit) · lobby · team/round-1 · team/round-2
+              (each with storyline/ and suspects/ tabs) · leaderboard (legacy
+              redirect — holds no query) · api/health
   components/ ui/ · layout/ · brand/ · fx/ · auth/ · game/ (round console,
-              timer, vote panel, live leaderboard) · admin/ (shell, controls)
+              timer, vote panel) · team/ (shell, tabs, nav, case file,
+              suspects, unlock notice) · admin/ (shell, controls)
   lib/        auth/ (password, session, guards) · security/ (rate-limit,
-              request) · validation/ · utils/
+              request, sign-in throttle) · storyline/ (beats, read-state,
+              signal) · team/ · validation/ · utils/
   server/     auth/ · admin/ · team/ · audit/ · game/ (engine, rules,
-              catalogue, constants, seed)
-  db/         schema.ts · index.ts
+              catalogue, constants, seed, content-guard, unarmed)
+  db/         schema.ts · index.ts · connection-config.ts · supabase-root-ca.ts
   types/      client-safe DTOs only
-tests/        vitest suites for engine rules (21 tests)
+tests/        vitest suites — 75 tests across 8 files (rules, catalogue,
+              content-guard, connection-config, event time, sign-in throttle,
+              participant-surface separation, case-file derivation)
+props/        printable physical props (s7/)
+scripts/      seed-event.ts · smoke.ts (destructive rehearsal) · generators
 ```
 
 ## Commands
