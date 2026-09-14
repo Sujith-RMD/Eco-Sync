@@ -54,8 +54,14 @@ describe("room-scale invariants", () => {
    * units behind one venue egress address were locked out by logging in.
    */
   it("gives the whole room headroom to mistype from one shared address", () => {
-    const worstHonestRoom = 60 * 3; // sixty units, three typos each
+    // Seventy-five units is the room size the live event runs at.
+    const worstHonestRoom = 75 * 3;
     expect(worstHonestRoom).toBeLessThan(SIGNIN_POLICIES.teamSource.limit);
+  });
+
+  it("absorbs a fourth typo per unit without refusing the room", () => {
+    // The margin the old 240 ceiling did not have: 75 x 4 = 300 exceeded it.
+    expect(75 * 4).toBeLessThan(SIGNIN_POLICIES.teamSource.limit);
   });
 
   it("still caps guessing against a single access code", () => {
