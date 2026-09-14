@@ -120,6 +120,17 @@ export function SuspectsBoard({ round, vote }: SuspectsBoardProps) {
     ? vote.suspects.find((suspect) => suspect.code === vote.suspectCode)
     : undefined;
 
+  /*
+    The roster and the ballot look alike, and only one of them is clickable. Say
+    which, on the roster itself: a team that has not broken the final code sees
+    six names and no way to pick one, and would reasonably read that as a bug.
+  */
+  const rosterState = vote.submitted
+    ? "verdict sealed"
+    : vote.unlocked
+      ? "vote open — ballot below"
+      : "read-only · vote sealed";
+
   return (
     <div className="space-y-4">
       <Panel
@@ -127,7 +138,7 @@ export function SuspectsBoard({ round, vote }: SuspectsBoardProps) {
         aside={
           <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
             <UserSearch className="h-3.5 w-3.5" />
-            {vote.submitted ? "verdict sealed" : "under examination"}
+            {rosterState}
           </span>
         }
         contentClassName="p-0"
@@ -145,12 +156,21 @@ export function SuspectsBoard({ round, vote }: SuspectsBoardProps) {
         </ul>
       </Panel>
 
-      <p className="flex items-start gap-2.5 border border-line/60 px-3.5 py-3 font-mono text-[11px] leading-relaxed text-dim">
-        <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Roles are the only particulars command has released on these subjects.
-        Statements, logs and the newspaper are physical evidence — your unit
-        reads them in the room, and nothing here paraphrases them.
-      </p>
+      <div className="space-y-3 border border-line/60 px-3.5 py-3">
+        <p className="flex items-start gap-2.5 font-mono text-[11px] leading-relaxed text-dim">
+          <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          Roles are the only particulars command has released on these subjects.
+          Statements, logs and the newspaper are physical evidence — your unit
+          reads them in the room, and nothing here paraphrases them.
+        </p>
+        {!vote.submitted && !vote.unlocked ? (
+          <p className="flex items-start gap-2.5 font-mono text-[11px] leading-relaxed text-mist">
+            <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            Read-only for now: nothing in this roster can be selected until the
+            final code breaks. The ballot appears below this roster, on this tab.
+          </p>
+        ) : null}
+      </div>
 
       <VotePanel vote={vote} />
     </div>

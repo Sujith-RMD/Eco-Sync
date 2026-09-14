@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   AlertTriangle,
@@ -17,10 +17,10 @@ import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Button } from "@/components/ui/button";
 
-function SealButton({ disabled }: { disabled: boolean }) {
+function SealButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant="danger" size="lg" disabled={disabled || pending}>
+    <Button type="submit" variant="danger" size="lg" disabled={pending}>
       {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gavel className="h-4 w-4" />}
       {pending ? "Sealing verdict" : "Seal vote — final"}
     </Button>
@@ -28,7 +28,6 @@ function SealButton({ disabled }: { disabled: boolean }) {
 }
 
 export function VotePanel({ vote }: { vote: VoteSnapshot }) {
-  const [selected, setSelected] = useState<string | null>(null);
   const [state, formAction] = useActionState(castVoteAction, initialVoteState);
 
   if (vote.submitted) {
@@ -63,12 +62,20 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
         title="Final verdict — culprit vote"
         aside={<StatusPill tone="muted" label="sealed" staticDot />}
       >
-        <p className="flex items-start gap-2.5 font-mono text-[12px] leading-relaxed text-dim">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-          The culprit vote unseals only when your unit breaks the final code on
-          the Answers tab. Free-form accusations are not accepted: the verdict is
-          chosen from the official roster above.
-        </p>
+        <div className="flex items-start gap-3">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-dim" />
+          <div className="min-w-0 space-y-3">
+            <p className="font-mono text-[12px] leading-relaxed text-mist">
+              The culprit vote is sealed. It unseals the moment your unit breaks
+              the final code on the Answers tab.
+            </p>
+            <p className="font-mono text-[11px] leading-relaxed text-dim">
+              The dossiers above are a reading list, not a ballot — nothing on
+              this tab can be selected yet. When the final code breaks, the
+              ballot appears here: six names, one vote, irreversible.
+            </p>
+          </div>
+        </div>
       </Panel>
     );
   }
@@ -78,47 +85,54 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
       title="Final verdict — culprit vote"
       aside={<StatusPill tone="warn" label="one vote · irreversible" />}
     >
-      <div className="space-y-5">
+      {/*
+        The ballot is native radios inside the form, not buttons driven by
+        useState. Selection is the one irreversible act in the game, so it must
+        survive a page where the client bundle did not run: this is the only
+        control in the app that would otherwise depend on hydration, and a
+        hydration miss renders a roster that silently cannot be picked.
+      */}
+      <form action={formAction} className="space-y-5">
         <p className="font-mono text-[12px] leading-relaxed text-mist">
           Every evidence chain converges on one insider. Select your suspect,
           then seal the verdict. Your unit gets exactly one vote — timestamped,
           permanent, and hidden from other units.
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="radiogroup" aria-label="Suspect roster">
-          {vote.suspects.map((suspect) => {
-            const isSelected = selected === suspect.code;
-            return (
-              <button
-                key={suspect.code}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() => setSelected(suspect.code)}
-                className={cn(
-                  "group flex items-start gap-3 border px-4 py-3.5 text-left transition-all duration-150",
-                  isSelected
-                    ? "border-alert/60 bg-alert/10 shadow-[0_0_24px_-8px_color-mix(in_oklab,var(--color-alert)_50%,transparent)]"
-                    : "border-line bg-abyss-950/50 hover:border-mist/50",
-                )}
-              >
-                <UserCheck
-                  className={cn(
-                    "mt-0.5 h-4 w-4 shrink-0 transition-colors",
-                    isSelected ? "text-alert" : "text-dim group-hover:text-mist",
-                  )}
-                />
-                <span className="min-w-0">
-                  <span className="block font-display text-sm font-semibold tracking-wide text-ink">
-                    {suspect.name}
-                  </span>
-                  <span className="mt-0.5 block font-mono text-[10px] uppercase leading-snug tracking-[0.1em] text-dim sm:tracking-[0.18em]">
-                    {suspect.role}
-                  </span>
+        <div
+          className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+          role="radiogroup"
+          aria-label="Suspect roster"
+        >
+          {vote.suspects.map((suspect) => (
+            <label
+              key={suspect.code}
+              className={cn(
+                "group flex cursor-pointer items-start gap-3 border px-4 py-3.5 text-left transition-all duration-150",
+                "border-line bg-abyss-950/50 hover:border-mist/50",
+                "has-[:checked]:border-alert/60 has-[:checked]:bg-alert/10",
+                "has-[:checked]:shadow-[0_0_24px_-8px_color-mix(in_oklab,var(--color-alert)_50%,transparent)]",
+                "has-[:focus-visible]:border-mist has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-mist/40",
+              )}
+            >
+              <input
+                type="radio"
+                name="suspectCode"
+                value={suspect.code}
+                required
+                className="peer sr-only"
+              />
+              <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-dim transition-colors group-hover:text-mist peer-checked:text-alert" />
+              <span className="min-w-0">
+                <span className="block font-display text-sm font-semibold tracking-wide text-ink">
+                  {suspect.name}
                 </span>
-              </button>
-            );
-          })}
+                <span className="mt-0.5 block font-mono text-[10px] uppercase leading-snug tracking-[0.1em] text-dim sm:tracking-[0.18em]">
+                  {suspect.role}
+                </span>
+              </span>
+            </label>
+          ))}
         </div>
 
         {state.message && state.status === "error" ? (
@@ -131,14 +145,13 @@ export function VotePanel({ vote }: { vote: VoteSnapshot }) {
           </div>
         ) : null}
 
-        <form action={formAction} className="flex flex-wrap items-center gap-4 border-t border-line/60 pt-4">
-          <input type="hidden" name="suspectCode" value={selected ?? ""} />
-          <SealButton disabled={!selected} />
+        <div className="flex flex-wrap items-center gap-4 border-t border-line/60 pt-4">
+          <SealButton />
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
             This cannot be undone
           </p>
-        </form>
-      </div>
+        </div>
+      </form>
     </Panel>
   );
 }
