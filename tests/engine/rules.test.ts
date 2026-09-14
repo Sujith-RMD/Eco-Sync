@@ -57,20 +57,24 @@ describe("scoring model", () => {
     expect(timeBonusPoints(-30, scoring.timeBonusPerFullMinute)).toBe(0);
   });
 
-  it("theoretical Round 1 maximum equals the supplied 830", () => {
+  it("theoretical Round 1 maximum equals the configured ceiling", () => {
     const base =
       round1.pointsPerPuzzle * (round1.puzzleCount - 1) + round1.finalPuzzlePoints;
     const bonus = timeBonusPoints(
       round1.durationMinutes * 60,
       scoring.timeBonusPerFullMinute,
     );
-    expect(base + bonus).toBe(830);
+    // Pinned as a literal as well as a symbol: 9×100 + 150 + 80 at a 40-minute
+    // round. A silent change to either the points or the clock trips this.
+    expect(base + bonus).toBe(1130);
     expect(base + bonus).toBe(scoring.maxRound1Score);
   });
 
   it("computes a simulated full run from pure rules only", () => {
-    // Solves all 7, two wrongs on one puzzle, one hint, finishes with 12:30 left.
-    let score = ROUND1_PUZZLES.reduce((sum, puzzle) => sum + puzzle.points, 0);
+    // Solves every Round 1 link, two wrongs on one puzzle, one hint,
+    // finishes with 12:30 still on the clock.
+    const solvedPoints = ROUND1_PUZZLES.reduce((sum, puzzle) => sum + puzzle.points, 0);
+    let score = solvedPoints;
     let penaltyApplied = 0;
     for (let i = 0; i < 2; i += 1) {
       const d = wrongPenaltyForAttempt(penaltyApplied, 10, 50);
@@ -79,8 +83,7 @@ describe("scoring model", () => {
     }
     score -= scoring.hintPenalty;
     score += timeBonusPoints(750, scoring.timeBonusPerFullMinute);
-    expect(score).toBe(750 - 20 - 30 + 24);
-    expect(score).toBe(724);
+    expect(score).toBe(solvedPoints - 20 - 30 + 24);
   });
 });
 
@@ -97,7 +100,7 @@ describe("ranking and tie-breaks", () => {
   };
   const T = (partial: Partial<StandingInput> & { teamId: number }): StandingInput => ({
     ...base,
-    teamName: `UNIT-${partial.teamId}`,
+    teamName: `TEAM#${partial.teamId}`,
     ...partial,
   });
 
@@ -107,7 +110,7 @@ describe("ranking and tie-breaks", () => {
       T({ teamId: 2, score: 700, finishedAt: new Date("2026-01-01T09:30:00Z"), solvedCount: 7 }),
       T({ teamId: 3, score: 700, solvedCount: 6, totalWrongPenalty: 30 }),
       T({ teamId: 4, score: 700, solvedCount: 6, totalWrongPenalty: 20 }),
-      T({ teamId: 5, score: 830, finishedAt: new Date("2026-01-01T11:00:00Z"), solvedCount: 7 }),
+      T({ teamId: 5, score: 1130, finishedAt: new Date("2026-01-01T11:00:00Z"), solvedCount: 10 }),
     ]);
     expect(ranked.map((r) => r.teamId)).toEqual([5, 2, 1, 4, 3]);
     expect(ranked.map((r) => r.rank)).toEqual([1, 2, 3, 4, 5]);

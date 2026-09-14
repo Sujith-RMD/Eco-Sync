@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CORRECT_SUSPECT_CODE,
   FINAL_CODE_PUZZLE_CODE,
+  PUZZLE_REVEALS,
   ROUND1_PUZZLES,
   ROUND2_PUZZLES,
   SUSPECTS,
@@ -12,17 +13,38 @@ import { GAME_CONSTANTS } from "@/server/game/constants";
 
 /* spec §7/§8 — Round 1 catalogue integrity */
 describe("Round 1 catalogue", () => {
-  it("contains exactly 7 sequential puzzles P1→P7", () => {
+  it("contains exactly 10 sequential puzzles P1→P10", () => {
     expect(ROUND1_PUZZLES).toHaveLength(GAME_CONSTANTS.round1.puzzleCount);
-    expect(ROUND1_PUZZLES.map((p) => p.code)).toEqual(["P1", "P2", "P3", "P4", "P5", "P6", "P7"]);
-    expect(ROUND1_PUZZLES.map((p) => p.orderIndex)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(ROUND1_PUZZLES.map((p) => p.code)).toEqual([
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P6",
+      "P7",
+      "P8",
+      "P9",
+      "P10",
+    ]);
+    expect(ROUND1_PUZZLES.map((p) => p.orderIndex)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
-  it("awards +100 for P1–P6 and +150 for P7", () => {
-    for (const puzzle of ROUND1_PUZZLES.slice(0, 6)) {
+  it("awards +100 for P1–P9 and +150 for the P10 capstone", () => {
+    for (const puzzle of ROUND1_PUZZLES.slice(0, -1)) {
       expect(puzzle.points).toBe(GAME_CONSTANTS.round1.pointsPerPuzzle);
     }
-    expect(ROUND1_PUZZLES[6]!.points).toBe(GAME_CONSTANTS.round1.finalPuzzlePoints);
+    expect(ROUND1_PUZZLES[ROUND1_PUZZLES.length - 1]!.points).toBe(
+      GAME_CONSTANTS.round1.finalPuzzlePoints,
+    );
+  });
+
+  it("keeps order_index contiguous, which the unlock chain depends on", () => {
+    // engine.ts unlocks exactly `orderIndex + 1`, so a gap does not merely skip
+    // a puzzle: it strands every later one and the case code never unseals.
+    expect(ROUND1_PUZZLES.map((p) => p.orderIndex)).toEqual(
+      ROUND1_PUZZLES.map((_, index) => index + 1),
+    );
   });
 
   it("every puzzle ships a non-empty normalized answer and at least one hint", () => {
@@ -31,6 +53,24 @@ describe("Round 1 catalogue", () => {
       expect(puzzle.hints.length).toBeGreaterThan(0);
       for (const hint of puzzle.hints) expect(hint.length).toBeGreaterThan(0);
     }
+  });
+
+  it("gates every reveal on SOLVED, because the URL carries the answer", () => {
+    for (const [code, reveal] of Object.entries(PUZZLE_REVEALS)) {
+      const puzzle = ROUND1_PUZZLES.find((p) => p.code === code);
+      expect(puzzle, `reveal ${code} has no matching puzzle`).toBeDefined();
+      // The reveal URL embeds the answer, so shipping it on UNLOCKED would hand
+      // the puzzle over. engine.ts attaches it on SOLVED only — never widen that.
+      expect(reveal.url.toUpperCase()).toContain(normalizeAnswer(puzzle!.answer));
+      expect(reveal.label.trim().length).toBeGreaterThan(0);
+      expect(reveal.complete.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps the case code last, since its letters resolve against earlier answers", () => {
+    const last = ROUND1_PUZZLES[ROUND1_PUZZLES.length - 1]!;
+    expect(last.points).toBe(GAME_CONSTANTS.round1.finalPuzzlePoints);
+    expect(last.points).toBeGreaterThan(GAME_CONSTANTS.round1.pointsPerPuzzle);
   });
 });
 

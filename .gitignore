@@ -20,6 +20,9 @@ credentials/
 .tmp-*
 tmp-*
 
+# agent working memory (local notes, not product source)
+.workbuddy-ai/
+
 # incremental build artifacts
 tsconfig.tsbuildinfo
 

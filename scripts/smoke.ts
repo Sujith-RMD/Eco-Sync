@@ -42,6 +42,7 @@ import {
   claimHint,
 } from "@/server/game/engine";
 import { ROUND1_PUZZLES, ROUND2_PUZZLES } from "@/server/game/catalogue";
+import { GAME_CONSTANTS } from "@/server/game/constants";
 import { isUnarmedAnswer } from "@/server/game/unarmed";
 
 let passed = 0;
@@ -182,9 +183,20 @@ async function main() {
   }
 
   const scoreAfterR1 = await scoreFor(t1.id, "ROUND_1");
-  const bonus = 750 - 40; // all points − hint − one wrong
-  expect(scoreAfterR1 > bonus, `score includes time bonus (got ${scoreAfterR1})`);
-  expect(scoreAfterR1 <= 830 - 40, `score beneath ceiling (got ${scoreAfterR1})`);
+  // Derived from the catalogue, never literals: the old hardcoded 750/830 sat
+  // unchanged through a Round 1 that grew from 7 links to 10, so the assertion
+  // went on passing while describing a round that no longer existed.
+  const solvedPoints = ROUND1_PUZZLES.reduce((sum, puzzle) => sum + puzzle.points, 0);
+  const deductions =
+    GAME_CONSTANTS.scoring.hintPenalty + GAME_CONSTANTS.scoring.wrongAnswerPenalty;
+  expect(
+    scoreAfterR1 > solvedPoints - deductions,
+    `score includes time bonus (got ${scoreAfterR1})`,
+  );
+  expect(
+    scoreAfterR1 <= GAME_CONSTANTS.scoring.maxRound1Score - deductions,
+    `score beneath ceiling (got ${scoreAfterR1})`,
+  );
 
   // timer expiry enforcement
   await db.execute(sql`update rounds set ends_at = now() - interval '1 minute' where code = 'ROUND_1'`);

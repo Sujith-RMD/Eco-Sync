@@ -1,7 +1,7 @@
 # ECO-SYNC: THE BREACH — Cryptic Room
 
 Production-grade multiplayer escape-room / cybersecurity investigation
-platform for a live event: **60 teams → Round 1 (top 15 qualify) →
+platform for a live event: **61 teams → Round 1 (top 15 qualify) →
 Round 2 (top 3 win) → sealed culprit vote.**
 
 All phases are implemented: foundation, server-authoritative game engine,
@@ -38,8 +38,11 @@ test-suite.
 
 ## Game content (from the supplied documents)
 
-- **Round 1** — 7 sequential puzzles, 40:00, +100 per puzzle (+150 final),
-  hint −30, wrong −10 capped at −50/puzzle, +2/full minute. Max 830.
+- **Round 1** — 10 sequential puzzles, 40:00, +100 per puzzle (+150 final),
+  hint −30, wrong −10 capped at −50/puzzle, +2/full minute. Max 1130.
+  P8/P9 carry their evidence inline as an `[IMG:…]` briefing line. P7
+  RECOVERED TRANSMISSION hands the team an external link once solved; the
+  snapshot exposes it on `SOLVED` only, because the URL contains the answer.
 - **Round 2** — 8 links in play order: S1 → S3 → S4 → S5 → S6 → S7 → S8 →
   `LAST` (the 150-point final code) → sealed culprit vote, 75:00. S7 is a
   physical prop pair (`props/s7/`); its answer is authored and the QR codes are
@@ -56,8 +59,8 @@ src/
               (each with storyline/ and suspects/ tabs) · leaderboard (legacy
               redirect — holds no query) · api/health
   components/ ui/ · layout/ · brand/ · fx/ · auth/ · game/ (round console,
-              timer, vote panel) · team/ (shell, tabs, nav, case file,
-              suspects, unlock notice) · admin/ (shell, controls)
+              timer, vote panel, briefing text) · team/ (shell, tabs, nav,
+              case file, suspects, unlock notice) · admin/ (shell, controls)
   lib/        auth/ (password, session, guards) · security/ (rate-limit,
               request, sign-in throttle) · storyline/ (beats, read-state,
               signal) · team/ · validation/ · utils/
@@ -65,11 +68,12 @@ src/
               catalogue, constants, seed, content-guard, unarmed)
   db/         schema.ts · index.ts · connection-config.ts · supabase-root-ca.ts
   types/      client-safe DTOs only
-tests/        vitest suites — 75 tests across 8 files (rules, catalogue,
+tests/        vitest suites — 80 tests across 8 files (rules, catalogue,
               content-guard, connection-config, event time, sign-in throttle,
               participant-surface separation, case-file derivation)
 props/        printable physical props (s7/)
-scripts/      seed-event.ts · smoke.ts (destructive rehearsal) · generators
+scripts/      seed-event.ts · smoke.ts (destructive rehearsal) ·
+              apply-round1-content.ts (writes the Round 1 chain) · generators
 ```
 
 ## Commands
@@ -88,17 +92,18 @@ npm run start              # serve production build
 ## Event operations
 
 1. Deploy, apply schema, open `/admin` → **Initialize event** (creates the
-   two rounds, the full supplied puzzle catalogue, 60 team accounts with
+   two rounds, the full supplied puzzle catalogue, 61 team accounts with
    per-team access codes, and one operator). Credentials are shown once and
    exportable as CSV — access codes are stored only as hashes.
-2. Teams sign in at `/login` → `/lobby` → Round 01 console.
+2. Teams sign in at `/login` → `/lobby` → Round 01 console. The login ID is
+   the `TEAM#XXXX` designation printed on the check-in slip.
 3. Command deck controls: **Start/End Round 01 → Qualify top 15 →
    Start/End Round 02**, teams registry, per-team detail (progression,
    attempts, ledger), final rankings, vote audit, full audit trail.
    Dangerous actions require typed confirmation and are audited.
 4. **Restart event** (danger zone) wipes all play data — scores, attempts,
    hints, verdicts, qualifications — and returns both rounds to `PENDING`, so
-   the **same 60 access codes** can run the event again. Every unit is signed
+   the **same 61 access codes** can run the event again. Every team is signed
    out and logs back in with the slip they already hold. Guarded: refused while
    a round is live, and requires typing `RESTART`.
 5. **Full purge** (collapsed inside the same card) additionally deletes the

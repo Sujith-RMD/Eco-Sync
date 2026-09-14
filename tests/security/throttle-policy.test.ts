@@ -94,7 +94,8 @@ describe("room-scale invariants", () => {
 
 describe("budget keys", () => {
   it("normalizes case and padding so retries share one budget", () => {
-    expect(teamCredentialKey("  UNIT-01 ")).toBe(teamCredentialKey("unit-01"));
+    // The real designation carries a '#', so normalization must not mangle it.
+    expect(teamCredentialKey("  TEAM#8210 ")).toBe(teamCredentialKey("team#8210"));
     expect(adminCredentialKey(" Admin ")).toBe(adminCredentialKey("admin"));
     expect(sourceKey(" 203.0.113.9 ")).toBe(sourceKey("203.0.113.9"));
   });

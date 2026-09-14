@@ -122,7 +122,7 @@ export const puzzles = pgTable(
     roundId: integer("round_id")
       .notNull()
       .references(() => rounds.id, { onDelete: "cascade" }),
-    /** Public puzzle code, e.g. P1 … P7 / S1 … S8 / FINAL. */
+    /** Public puzzle code, e.g. P1 … P10 / S1 … S8 / LAST. */
     code: varchar("code", { length: 16 }).notNull(),
     orderIndex: integer("order_index").notNull(),
     kind: puzzleKindEnum("kind").notNull().default("DIGITAL"),

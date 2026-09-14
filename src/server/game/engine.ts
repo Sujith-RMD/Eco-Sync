@@ -26,6 +26,7 @@ import {
 import {
   CORRECT_SUSPECT_CODE,
   FINAL_CODE_PUZZLE_CODE,
+  PUZZLE_REVEALS,
   SUSPECTS,
   isKnownSuspect,
 } from "@/server/game/catalogue";
@@ -240,6 +241,9 @@ export async function getTeamRoundSnapshot(
       hintsAvailable:
         status === "LOCKED" ? 0 : Math.max(0, hintList.length - usedHints.length),
       usedHints,
+      // Gated on SOLVED, never on UNLOCKED: the reveal URL contains the answer,
+      // so it must not reach the client before the link is actually broken.
+      reveal: status === "SOLVED" ? (PUZZLE_REVEALS[p.code] ?? null) : null,
     };
   });
 

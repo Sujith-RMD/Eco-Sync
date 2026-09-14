@@ -31,7 +31,7 @@ export interface PuzzleSeed {
 }
 
 /* -------------------------------------------------------------------------- */
-/* ROUND 1 — 7 sequential puzzles (P1→P7), 40 minutes                          */
+/* ROUND 1 — 10 sequential puzzles (P1→P10), 40 minutes                        */
 /* -------------------------------------------------------------------------- */
 
 export const ROUND1_PUZZLES: PuzzleSeed[] = [
@@ -121,6 +121,53 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     code: "P7",
     orderIndex: 7,
     kind: "DIGITAL",
+    title: "RECOVERED TRANSMISSION",
+    briefing:
+      "The signal appears to have been transmitted backwards.\n" +
+      "Restore the transmission and follow where it leads.\n" +
+      "\n" +
+      "33=xedni&nDaXbcZKzsGVksDs01yRDlP_wPmIPL1NLP=tsil&AnDXWiP971t=v?",
+    answer: "t179PiWXDnA",
+    hints: [
+      "It is reversed end to end, not word by word. Turn it around and it reads as a YouTube link — enter the eleven characters that follow v=.",
+    ],
+    points: 100,
+  },
+  {
+    code: "P8",
+    orderIndex: 8,
+    kind: "DIGITAL",
+    title: "PACKET CAPTURE",
+    briefing:
+      "Decode the hexadecimal payload and recover the hidden message.\n" +
+      "\n" +
+      "[IMG:puzzles/packet-capture.png]",
+    answer: "RESOURCE",
+    hints: [
+      "Every pair of hex digits is one character. 52 is R and 45 is E — read all eight pairs the same way.",
+    ],
+    points: 100,
+  },
+  {
+    code: "P9",
+    orderIndex: 9,
+    kind: "DIGITAL",
+    title: "SYSTEM LOG",
+    briefing:
+      "The logs show a chain of failures escalating from connection to access, ending with a lost connection.\n" +
+      "Which subsystem is at the heart of the failure?\n" +
+      "\n" +
+      "[IMG:puzzles/system-log.png]",
+    answer: "DATABASE",
+    hints: [
+      "Every failing row names the same system in the first column, and the water, power and food rows around them stay NORMAL.",
+    ],
+    points: 100,
+  },
+  {
+    code: "P10",
+    orderIndex: 10,
+    kind: "DIGITAL",
     title: "THE CASE CODE",
     briefing:
       "Build the case code. Each tag is Puzzle number, then letter position.\n" +
@@ -132,6 +179,35 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     points: 150,
   },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* External reveals — handed over only once the link is broken                  */
+/* -------------------------------------------------------------------------- */
+
+export interface PuzzleReveal {
+  /** Button label shown on solve. */
+  label: string;
+  /** External URL opened in a new tab. */
+  url: string;
+  /** Confirmation shown once the player has opened it and come back. */
+  complete: string;
+}
+
+/**
+ * A puzzle may hand the player an external link once it is solved. This lives
+ * here rather than in a component because the URL *contains the answer* —
+ * `t179PiWXDnA` is the video id — so a constant in the client bundle would let
+ * a team read the answer straight out of the page source. `engine.ts` attaches
+ * it to the snapshot only when that puzzle's status is SOLVED.
+ */
+export const PUZZLE_REVEALS: Record<string, PuzzleReveal> = {
+  P7: {
+    label: "OPEN RECOVERED TRANSMISSION",
+    url: "https://www.youtube.com/watch?v=t179PiWXDnA&list=PLN1LPImPw_PlDRy10sDskVGszKZcbXaDn&index=33",
+    complete:
+      "TRANSMISSION COMPLETE\nCONNECTION RESTORED.\nNext question unlocked.",
+  },
+};
 
 /* -------------------------------------------------------------------------- */
 /* ROUND 2 — supplied questions only, in play order:                            */

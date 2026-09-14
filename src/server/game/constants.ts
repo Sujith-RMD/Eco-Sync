@@ -13,7 +13,7 @@ export const GAME_CONSTANTS = {
   round1: {
     code: "ROUND_1" as const,
     durationMinutes: 40,
-    puzzleCount: 7,
+    puzzleCount: 10,
     pointsPerPuzzle: 100,
     finalPuzzlePoints: 150,
     qualifyingTeams: 15,
@@ -31,7 +31,7 @@ export const GAME_CONSTANTS = {
     wrongAnswerPenalty: 10,
     wrongAnswerPenaltyCapPerPuzzle: 50,
     timeBonusPerFullMinute: 2,
-    maxRound1Score: 830,
+    maxRound1Score: 1130,
     /** Server-enforced submission cooldown after a wrong answer. */
     lockoutSeconds: 30,
   },

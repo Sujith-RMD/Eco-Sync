@@ -45,6 +45,19 @@ export interface PuzzleSnapshot {
   hintsAvailable: number;
   /** Only hints actually claimed by this team. */
   usedHints: string[];
+  /**
+   * External link handed over once this link is broken; null until then.
+   * Attached server-side rather than shipped as a component constant, because
+   * the URL carries the answer itself.
+   */
+  reveal: PuzzleRevealView | null;
+}
+
+/** Shape of `PuzzleSnapshot.reveal` — only ever sent once the link is broken. */
+export interface PuzzleRevealView {
+  label: string;
+  url: string;
+  complete: string;
 }
 
 export interface SuspectOption {
