@@ -73,7 +73,8 @@ tests/        vitest suites — 80 tests across 8 files (rules, catalogue,
               participant-surface separation, case-file derivation)
 props/        printable physical props (s7/)
 scripts/      seed-event.ts · smoke.ts (destructive rehearsal) ·
-              apply-round1-content.ts (writes the Round 1 chain) · generators
+              apply-round1-content.ts (writes the Round 1 chain) ·
+              apply-roster.ts (UNIT-NN → TEAM#XXXX) · generators
 ```
 
 ## Commands

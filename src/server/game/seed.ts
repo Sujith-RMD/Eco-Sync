@@ -13,8 +13,13 @@ import { normalizeAnswer } from "@/server/game/rules";
  * Check-in roster, in sheet order. `name` is the login identifier issued at the
  * desk — the real TEAM#XXXX designation, not a placeholder. The order pairs each
  * team with the access code printed beside it, so it must not be reshuffled.
+ *
+ * Exported because it is the only copy of the mapping: `scripts/apply-roster.ts`
+ * reads it to migrate a database still holding the old `UNIT-NN` logins, and
+ * `db/roster-rename.sql` is generated from that. A second hand-written copy of
+ * sixty-one designations is a second place to get one of them wrong.
  */
-const TEAM_ROSTER = [
+export const TEAM_ROSTER = [
   "TEAM#8210", "TEAM#9303", "TEAM#5376", "TEAM#3481", // AB5-101
   "TEAM#8938", "TEAM#3768", "TEAM#1259", "TEAM#1996", // AB5-102
   "TEAM#7505", "TEAM#8824", "TEAM#3555", "TEAM#8197", // AB5-107
