@@ -35,13 +35,15 @@ const globalForDb = globalThis as typeof globalThis & {
  * Single pooled connection, reused across hot reloads in development and
  * across invocations within the same serverless instance in production.
  *
- * `max: 3`, not 10. This runs on Vercel, where every concurrent function
+ * `max: 2`, not 10. This runs on Vercel, where every concurrent function
  * instance opens *its own* pool: 10 per instance multiplied by the dozens of
- * instances 61 teams polling every few seconds can summon is how a game reaches
+ * instances 75 teams polling every few seconds can summon is how a game reaches
  * Supabase's connection ceiling at exactly the moment it matters — mid-round,
- * with everyone submitting at once. Three is enough for a single instance,
- * because each request here is a handful of short queries, and it keeps the
- * aggregate (instances x 3) inside the pooler's budget.
+ * with everyone submitting at once. Two keeps the aggregate (instances x 2)
+ * inside Supabase free tier's 60-connection ceiling: 75 clients polling every
+ * 15 seconds yields ~15 instances, and 15 x 2 = 30 — safe headroom. Three
+ * would push it to 45, which is tight if Vercel spins up extra instances during
+ * a submission burst.
  *
  * Transaction-mode pooling (port 6543) is compatible with this application: the
  * codebase uses no `SET LOCAL`, advisory locks, `LISTEN`/`NOTIFY` or named
@@ -56,7 +58,7 @@ export const pool =
   globalForDb.__ecosyncDbPool ??
   new Pool({
     ...connection,
-    max: 3,
+    max: 2,
     connectionTimeoutMillis: 10_000,
   });
 

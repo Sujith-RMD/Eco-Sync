@@ -16,7 +16,7 @@ import { RoundConsole } from "@/components/game/round-console";
 function StandbyView({ minutesNote }: { minutesNote: string }) {
   return (
     <div className="mx-auto max-w-lg">
-      <AutoRefresh intervalMs={5000} />
+      <AutoRefresh intervalMs={15000} />
       <Panel
         title="Awaiting go-signal"
         aside={<Radio className="h-4 w-4 text-caution animate-pulse" />}
@@ -60,7 +60,7 @@ export function RoundStateView({ result }: { result: TeamSnapshotResult }) {
     case "gated":
       return (
         <div className="mx-auto max-w-lg">
-          <AutoRefresh intervalMs={10000} />
+          <AutoRefresh intervalMs={15000} />
           <Panel title="Access denied — Round 02">
             <div className="space-y-4">
               <p className="font-mono text-[12px] leading-relaxed text-mist">

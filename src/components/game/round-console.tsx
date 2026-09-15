@@ -432,7 +432,7 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
 
   return (
     <div className="space-y-5 perspective-container">
-      <AutoRefresh intervalMs={8000} />
+      <AutoRefresh intervalMs={15000} />
 
       {/*
         Instrument strip — wrapped in InvestigationConsole for 3D framing.
