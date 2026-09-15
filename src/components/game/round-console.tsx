@@ -18,11 +18,12 @@ import {
   SendHorizontal,
   Trophy,
 } from "lucide-react";
-import { requestHintAction, submitAnswerAction } from "@/server/team/actions";
+import { requestHintAction, submitAnswerAction, acknowledgeTransmissionAction } from "@/server/team/actions";
 import { emitStorylineSignal } from "@/lib/storyline/signal";
 import {
   initialSubmitState,
   type PuzzleSnapshot,
+  type RoundCode,
   type RoundSnapshot,
 } from "@/types/game";
 import { cn } from "@/lib/utils/cn";
@@ -115,7 +116,9 @@ function AnswerForm({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Puz
           ) : (
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           )}
-          {state.message}
+          {state.message === "TRANSMISSION_RECEIVED"
+            ? "Entry accepted. Open the transmission below to proceed."
+            : state.message}
         </div>
       ) : null}
     </div>
@@ -219,10 +222,26 @@ function HintRequest({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Pu
  * the video was actually watched: `opened` is set on the click itself, so the
  * confirmation is waiting the moment they switch back.
  */
-function RevealCard({ puzzle }: { puzzle: PuzzleSnapshot }) {
+function RevealCard({ puzzle, roundCode }: { puzzle: PuzzleSnapshot; roundCode: string }) {
   const reveal = puzzle.reveal;
+  const router = useRouter();
   const [opened, setOpened] = useState(false);
+  const [acknowledging, setAcknowledging] = useState(false);
   if (!reveal) return null;
+
+  const handleOpen = async () => {
+    setAcknowledging(true);
+    // Acknowledge the transmission to unlock the next puzzle
+    const result = await acknowledgeTransmissionAction(roundCode as RoundCode, puzzle.code);
+    if (result.ok) {
+      // Signal that new storyline content was unlocked
+      emitStorylineSignal("unlocked", { roundCode: roundCode as RoundCode });
+    }
+    setOpened(true);
+    setAcknowledging(false);
+    // Refresh to show the newly unlocked puzzle
+    router.refresh();
+  };
 
   return (
     <div className="flex flex-col gap-3 border border-acid/40 bg-acid/10 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
@@ -242,9 +261,12 @@ function RevealCard({ puzzle }: { puzzle: PuzzleSnapshot }) {
           href={reveal.url}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={() => setOpened(true)}
+          onClick={handleOpen}
           className={cn(buttonClasses({ variant: "primary", size: "sm" }), "shrink-0")}
         >
+          {acknowledging ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : null}
           {reveal.label}
         </a>
       )}
@@ -463,7 +485,7 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
         </div>
       ) : null}
 
-      {reveal ? <RevealCard key={reveal.code} puzzle={reveal} /> : null}
+      {reveal ? <RevealCard key={reveal.code} puzzle={reveal} roundCode={snapshot.round.code} /> : null}
 
       {roundEnded ? (
         <div className="flex items-start gap-3 border border-line bg-abyss-900/60 px-4 py-3.5">

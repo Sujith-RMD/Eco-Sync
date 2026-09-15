@@ -459,6 +459,13 @@ export async function submitAnswer(input: {
 
     const next = roundPuzzles.find((p) => p.orderIndex === puzzle.orderIndex + 1);
     if (next) {
+      // Puzzles with a reveal (e.g. P7 RECOVERED TRANSMISSION) require the
+      // player to acknowledge the transmission before the next link unlocks.
+      // The reveal card calls acknowledgeTransition after the player opens it.
+      const hasReveal = PUZZLE_REVEALS[puzzle.code] !== undefined;
+      if (hasReveal) {
+        return { outcome: "CORRECT", message: "TRANSMISSION_RECEIVED" };
+      }
       await tx
         .insert(teamPuzzleProgress)
         .values({ teamId, puzzleId: next.id, status: "UNLOCKED", unlockedAt: now })
@@ -620,6 +627,99 @@ export async function claimHint(input: {
   }
 
   return result;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Transmission acknowledgment (P7 → P8 gate)                                  */
+/* -------------------------------------------------------------------------- */
+
+export type AcknowledgeTransmissionOutcome = "UNLOCKED" | "ALREADY_OPEN" | "NO_REVEAL" | "NOT_SOLVED" | "ERROR";
+
+/**
+ * Acknowledge a puzzle's transmission reveal (e.g. P7 RECOVERED TRANSMISSION)
+ * and unlock the next puzzle in the chain. This gates P8 behind the player
+ * explicitly opening the P7 transmission link.
+ */
+export async function acknowledgeTransmission(input: {
+  teamId: number;
+  roundCode: RoundCode;
+  puzzleCode: string;
+}): Promise<{ outcome: AcknowledgeTransmissionOutcome; message: string }> {
+  const { teamId, roundCode, puzzleCode } = input;
+  const now = new Date();
+
+  const round = await db.query.rounds.findFirst({
+    where: eq(rounds.code, roundCode),
+  });
+  if (!round) return { outcome: "ERROR", message: "Event is not initialized." };
+  if (round.status !== "ACTIVE") {
+    return { outcome: "ERROR", message: "Round is not active." };
+  }
+
+  const puzzle = await db.query.puzzles.findFirst({
+    where: and(eq(puzzles.roundId, round.id), eq(puzzles.code, puzzleCode)),
+  });
+  if (!puzzle) return { outcome: "ERROR", message: "Unknown puzzle reference." };
+
+  // Only puzzles with a reveal can be acknowledged.
+  const reveal = PUZZLE_REVEALS[puzzle.code];
+  if (!reveal) {
+    return { outcome: "NO_REVEAL", message: "This puzzle has no transmission to acknowledge." };
+  }
+
+  // The puzzle must be solved before acknowledgment.
+  const progress = await db.query.teamPuzzleProgress.findFirst({
+    where: and(
+      eq(teamPuzzleProgress.teamId, teamId),
+      eq(teamPuzzleProgress.puzzleId, puzzle.id),
+    ),
+  });
+  if (!progress || progress.status !== "SOLVED") {
+    return { outcome: "NOT_SOLVED", message: "Solve this puzzle first." };
+  }
+
+  // Find the next puzzle.
+  const roundPuzzles = await db
+    .select({ id: puzzles.id, code: puzzles.code, orderIndex: puzzles.orderIndex })
+    .from(puzzles)
+    .where(eq(puzzles.roundId, round.id))
+    .orderBy(asc(puzzles.orderIndex));
+
+  const next = roundPuzzles.find((p) => p.orderIndex === puzzle.orderIndex + 1);
+  if (!next) {
+    return { outcome: "ALREADY_OPEN", message: "No further puzzles in this chain." };
+  }
+
+  // Idempotent: if next puzzle is already unlocked or solved, do nothing.
+  const nextProgress = await db.query.teamPuzzleProgress.findFirst({
+    where: and(
+      eq(teamPuzzleProgress.teamId, teamId),
+      eq(teamPuzzleProgress.puzzleId, next.id),
+    ),
+  });
+  if (nextProgress && nextProgress.status !== "LOCKED") {
+    return { outcome: "ALREADY_OPEN", message: "Next puzzle already unlocked." };
+  }
+
+  // Unlock the next puzzle.
+  await db
+    .insert(teamPuzzleProgress)
+    .values({ teamId, puzzleId: next.id, status: "UNLOCKED", unlockedAt: now })
+    .onConflictDoNothing();
+
+  await logAudit({
+    actorType: "TEAM",
+    actorId: teamId,
+    action: "game.transmission.acknowledged",
+    entity: "puzzle",
+    entityId: puzzleCode,
+    meta: { round: roundCode, unlocks: next.code },
+  });
+
+  return {
+    outcome: "UNLOCKED",
+    message: "Transmission acknowledged. Next puzzle unlocked.",
+  };
 }
 
 /* -------------------------------------------------------------------------- */
