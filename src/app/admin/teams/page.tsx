@@ -101,7 +101,7 @@ export default async function AdminTeamsPage({
                       {row.scoreR1}
                     </td>
                     <td className="hidden px-3 py-2.5 text-right tabular-nums text-mist sm:table-cell">
-                      {row.solvedR1}/7
+                      {row.solvedR1}/{GAME_CONSTANTS.round1.puzzleCount}
                     </td>
                     <td className="hidden px-3 py-2.5 text-mist lg:table-cell">
                       {row.currentR1 ?? "—"}

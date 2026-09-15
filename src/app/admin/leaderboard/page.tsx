@@ -83,7 +83,7 @@ export default async function AdminLeaderboardPage() {
                         {row.score}
                       </td>
                       <td className="hidden px-3 py-2 text-right tabular-nums text-mist sm:table-cell">
-                        {row.solvedCount}/7
+                        {row.solvedCount}/{GAME_CONSTANTS.round1.puzzleCount}
                       </td>
                       <td className="hidden px-3 py-2 text-right tabular-nums text-mist md:table-cell">
                         {fmt(row.finishedAt)}
