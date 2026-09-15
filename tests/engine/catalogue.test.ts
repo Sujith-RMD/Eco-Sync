@@ -6,6 +6,7 @@ import {
   ROUND1_PUZZLES,
   ROUND2_PUZZLES,
   SUSPECTS,
+  answerInputFor,
   isKnownSuspect,
 } from "@/server/game/catalogue";
 import { normalizeAnswer } from "@/server/game/rules";
@@ -52,6 +53,20 @@ describe("Round 1 catalogue", () => {
       expect(normalizeAnswer(puzzle.answer).length).toBeGreaterThan(0);
       expect(puzzle.hints.length).toBeGreaterThan(0);
       for (const hint of puzzle.hints) expect(hint.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("keeps every answer typeable inside its own answer box", () => {
+    // The box is a real constraint, not decoration. A maxLength shorter than the
+    // answer truncates what the team types, the engine never sees the word, and
+    // the door becomes unpassable — with the round clock still running. A
+    // letters-only door holding a numeric answer fails the same way.
+    for (const puzzle of [...ROUND1_PUZZLES, ...ROUND2_PUZZLES]) {
+      const input = answerInputFor(puzzle.code);
+      const answer = normalizeAnswer(puzzle.answer);
+      expect(answer.length).toBeLessThanOrEqual(input.maxLength);
+      if (input.lettersOnly) expect(answer).toMatch(/^[A-Z]+$/);
+      expect(input.placeholder.trim().length).toBeGreaterThan(0);
     }
   });
 

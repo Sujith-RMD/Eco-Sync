@@ -51,6 +51,23 @@ export interface PuzzleSnapshot {
    * the URL carries the answer itself.
    */
   reveal: PuzzleRevealView | null;
+  /**
+   * How the answer box presents itself. Always present — every puzzle has an
+   * input, so the component never has to branch on null.
+   */
+  answerInput: AnswerInputView;
+}
+
+/**
+ * Presentation for the answer box. Carries no answer: the placeholder is a
+ * shape hint the puzzle author chose, and the limits exist so a team cannot
+ * fat-finger a longer string than the door accepts.
+ */
+export interface AnswerInputView {
+  placeholder: string;
+  maxLength: number;
+  /** Restrict to A–Z; the browser refuses digits and punctuation outright. */
+  lettersOnly: boolean;
 }
 
 /** Shape of `PuzzleSnapshot.reveal` — only ever sent once the link is broken. */

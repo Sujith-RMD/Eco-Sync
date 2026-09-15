@@ -28,6 +28,7 @@ import {
   FINAL_CODE_PUZZLE_CODE,
   PUZZLE_REVEALS,
   SUSPECTS,
+  answerInputFor,
   isKnownSuspect,
 } from "@/server/game/catalogue";
 import { auditRoundAnswers } from "@/server/game/content-guard";
@@ -244,6 +245,9 @@ export async function getTeamRoundSnapshot(
       // Gated on SOLVED, never on UNLOCKED: the reveal URL contains the answer,
       // so it must not reach the client before the link is actually broken.
       reveal: status === "SOLVED" ? (PUZZLE_REVEALS[p.code] ?? null) : null,
+      // Not gated on anything: a placeholder describes the SHAPE of the answer,
+      // not the answer, and the box has to render before a team can type in it.
+      answerInput: answerInputFor(p.code),
     };
   });
 

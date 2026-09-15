@@ -80,11 +80,15 @@ function AnswerForm({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Puz
         <TextInput
           name="answer"
           required
-          maxLength={255}
+          maxLength={puzzle.answerInput.maxLength}
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
-          placeholder="ENTER ANSWER"
+          placeholder={puzzle.answerInput.placeholder}
+          // Letters-only doors refuse digits and punctuation in the browser, so
+          // a team cannot submit a string the door could never have accepted and
+          // burn one of its three wrong-answer penalties finding that out.
+          pattern={puzzle.answerInput.lettersOnly ? "[A-Za-z]+" : undefined}
           disabled={roundEnded || locked}
           className="flex-1 uppercase tracking-[0.2em]"
           aria-label={`Answer for puzzle ${puzzle.code}`}

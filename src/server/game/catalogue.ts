@@ -1,5 +1,7 @@
 import "server-only";
 
+import type { AnswerInputView } from "@/types/game";
+
 /**
  * [SERVER-ONLY — CONFIDENTIAL]
  *
@@ -28,6 +30,19 @@ export interface PuzzleSeed {
   answer: string;
   hints: string[];
   points: number;
+  /**
+   * Presentation for the answer box. Never affects grading — `answer` is what
+   * the engine compares, and these three only shape the input a team types
+   * into.
+   *
+   * They live here rather than in a database column because they are not game
+   * content: a placeholder is a hint about the answer's SHAPE, and the author
+   * sets it beside the answer it describes. Keeping them out of the schema
+   * means changing one is a redeploy, not a migration on every environment.
+   */
+  answerPlaceholder?: string;
+  answerMaxLength?: number;
+  answerLettersOnly?: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -80,6 +95,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "All four fragments are inside your own room, never in the corridor. Join them in the order they are numbered and enter one word.",
     ],
     points: 100,
+    answerPlaceholder: "ASKEY YOUR COMPUTER",
   },
   {
     code: "P4",
@@ -91,6 +107,9 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     answer: "USB",
     hints: ["Three letters. Name the kind of device, not a brand."],
     points: 100,
+    answerPlaceholder: "ABC",
+    answerMaxLength: 3,
+    answerLettersOnly: true,
   },
   {
     code: "P5",
@@ -337,6 +356,41 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     points: 150,
   },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* Answer-box presentation                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Built once rather than scanned per call. `getTeamRoundSnapshot` runs on every
+ * poll, and a linear walk across both rounds for each of the ten links would be
+ * pure waste on the hottest path in the game.
+ */
+const PUZZLE_BY_CODE = new Map<string, PuzzleSeed>(
+  [...ROUND1_PUZZLES, ...ROUND2_PUZZLES].map((puzzle) => [puzzle.code, puzzle]),
+);
+
+/** Used by every puzzle that declares nothing, which is most of them. */
+const DEFAULT_ANSWER_INPUT: AnswerInputView = {
+  placeholder: "ENTER ANSWER",
+  maxLength: 255,
+  lettersOnly: false,
+};
+
+/**
+ * Resolve the answer box for a puzzle code. Never throws, never returns null:
+ * a database row whose code is absent from the catalogue still has to render an
+ * input, and a fallback beats a blank box in the middle of a round.
+ */
+export function answerInputFor(code: string): AnswerInputView {
+  const seed = PUZZLE_BY_CODE.get(code);
+  if (!seed) return DEFAULT_ANSWER_INPUT;
+  return {
+    placeholder: seed.answerPlaceholder ?? DEFAULT_ANSWER_INPUT.placeholder,
+    maxLength: seed.answerMaxLength ?? DEFAULT_ANSWER_INPUT.maxLength,
+    lettersOnly: seed.answerLettersOnly ?? DEFAULT_ANSWER_INPUT.lettersOnly,
+  };
+}
 
 /* -------------------------------------------------------------------------- */
 /* Culprit vote (supplied material)                                            */
