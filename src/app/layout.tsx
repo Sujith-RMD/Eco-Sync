@@ -27,7 +27,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#03070c",
+  // Mobile browser chrome. Must track --color-abyss-950 in globals.css, or the
+  // URL bar renders blue-black above a charcoal page.
+  themeColor: "#0e0d0c",
   colorScheme: "dark",
 };
 

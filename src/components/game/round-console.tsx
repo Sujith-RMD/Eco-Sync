@@ -101,7 +101,9 @@ function AnswerForm({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Puz
           role="status"
           className={cn(
             "flex items-start gap-2.5 border px-3.5 py-3 font-mono text-[12px] leading-relaxed",
-            state.status === "correct" && "border-acid/40 bg-acid/10 text-acid",
+            // `confirm`, not `acid`: blue now means interactive, and a correct
+            // answer is a verdict rather than an invitation to click.
+            state.status === "correct" && "border-confirm/40 bg-confirm/10 text-confirm",
             state.status === "wrong" && "border-alert/40 bg-alert/10 text-alert",
             state.status === "blocked" && "border-caution/40 bg-caution/10 text-caution",
           )}
@@ -356,7 +358,9 @@ function Metric({ label, children }: { label: string; children: ReactNode }) {
 /* -------------------------------------------------------------------------- */
 
 function statusIcon(puzzle: PuzzleSnapshot) {
-  if (puzzle.status === "SOLVED") return <CheckCircle2 className="h-4 w-4 text-acid" />;
+  // A solved link is a verdict, so it takes `confirm` rather than the
+  // interactive blue; UNLOCKED stays amber because it is the live one.
+  if (puzzle.status === "SOLVED") return <CheckCircle2 className="h-4 w-4 text-confirm" />;
   if (puzzle.status === "UNLOCKED") return <Radio className="h-4 w-4 text-caution animate-pulse" />;
   return <Lock className="h-4 w-4 text-dim" />;
 }

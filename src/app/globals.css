@@ -2,45 +2,61 @@
 
 /*
   ECO-SYNC: THE BREACH — design system (Tailwind v4)
-  Dark, cinematic, high-tech operations-console aesthetic.
+
+  The interface is a case file, not an operations console.
+
+  Surfaces are matte charcoal and graphite with no blue cast, type is warm
+  off-white on them, and the whole thing reads as paper and evidence rather than
+  glass and telemetry. The blue that used to wash the entire interface is now an
+  accent with a job: interactive elements, active states, links, and the one
+  piece of evidence worth pointing at. Red still means a wrong answer and amber
+  still means a lockout — those two were never decorative and are not now.
+
+  Colour is deliberately NOT brand-derived for surfaces any more. The old ramp
+  pushed the logo's hue (213) to 3-22% lightness, which is why everything read
+  as blue. Charcoal is neutral on purpose: it lets the logo's blue be the only
+  saturated thing on the page instead of one more shade of the background.
 */
 @theme {
   --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* surfaces — matte charcoal and graphite, warm-neutral, no hue */
+  --color-abyss-950: #0e0d0c;
+  --color-abyss-900: #171614;
+  --color-line: #33302b;
+
+  /* text — warm off-white, muted steel, desaturated */
+  --color-ink: #f0ece5;
+  --color-mist: #b5aea4;
+  --color-dim: #857e74;
+
   /*
-     Brand palette — derived from public/logo.svg.
-     The mark's own colour is #3f78bc (hsl 213 50% 49%), covering ~51% of its
-     painted area, with a cyan family beside it at hue 191-205 (87% of all
-     saturated paint sits at hue 210). Everything below is that hue ramp: the
-     surfaces are the same 213-217 hue pushed to 3-22% lightness, and the
-     accents are the logo blue lifted for legibility on a near-black ground —
-     #3f78bc itself only reaches 4.4:1 there, too low for the 11-12px mono text
-     this UI is built from, so `acid` is its bright sibling.
-     `alert` and `caution` are deliberately NOT brand-derived: red means a wrong
-     answer and amber means a lockout, regardless of branding.
+    accents
+
+    `acid` is the ECO-SYNC blue. The mark's own #3f78bc only reaches ~4.3:1 on
+    this charcoal — under the floor for the 10-12px mono this UI is built from —
+    so `acid` stays its bright sibling at ~7.3:1. The logo keeps the true brand
+    blue; the UI keeps a legible version of it.
+
+    `pulse` used to be cyan, which was the single strongest "cyberpunk terminal"
+    signal in the interface. It is now a desaturated olive — the field-marker
+    colour, which is what it is actually used for.
+
+    `alert` and `caution` are semantic and are NOT decorative: red means a wrong
+    answer, amber means a lockout. `confirm` exists so a correct answer has a
+    colour of its own instead of borrowing the interactive blue, which would
+    have made blue mean two things at once.
   */
-  /* surfaces */
-  --color-abyss-950: #03070c;
-  --color-abyss-900: #060b13;
-  --color-line: #23374d;
-
-  /* text */
-  --color-ink: #eef5fb;
-  --color-mist: #bcccdc;
-  --color-dim: #8198b1;
-
-  /* accents */
   --color-acid: #45a4f7;
-  --color-pulse: #5abbe2;
-  --color-alert: #ff5470;
-  --color-caution: #ffc857;
+  --color-pulse: #96a37f;
+  --color-alert: #e5484d;
+  --color-caution: #e0a94a;
+  --color-confirm: #6fae7f;
 
   /* animation tokens (keyframes co-located below) */
-  --animate-scan-band: scan-band 9s linear infinite;
   --animate-blink-dot: blink-dot 2.2s ease-in-out infinite;
   --animate-marquee: marquee 38s linear infinite;
-  --animate-flicker: flicker 7s linear infinite;
   --animate-reveal-up: reveal-up 0.9s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
   /* The unread badge must be noticed once, not watched. Short, and only on mount. */
   --animate-badge-pop: badge-pop 0.3s cubic-bezier(0.22, 0.8, 0.24, 1) both;
@@ -53,23 +69,6 @@
     to {
       transform: scale(1);
       opacity: 1;
-    }
-  }
-
-  @keyframes scan-band {
-    0% {
-      transform: translateY(-15%);
-      opacity: 0;
-    }
-    8% {
-      opacity: 1;
-    }
-    92% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(760%);
-      opacity: 0;
     }
   }
 
@@ -91,28 +90,6 @@
     }
     to {
       transform: translateX(-50%);
-    }
-  }
-
-  @keyframes flicker {
-    0%,
-    100% {
-      opacity: 0.9;
-    }
-    41% {
-      opacity: 0.9;
-    }
-    42% {
-      opacity: 0.55;
-    }
-    43% {
-      opacity: 0.95;
-    }
-    44% {
-      opacity: 0.7;
-    }
-    45% {
-      opacity: 1;
     }
   }
 
@@ -159,41 +136,22 @@
 }
 
 @layer utilities {
-  /* outlined display type */
+  /* outlined display type — the case-file subline */
   .text-outline {
     color: transparent;
     -webkit-text-stroke: 1.5px color-mix(in oklab, var(--color-ink) 55%, transparent);
   }
 
-  /* hero gradient type */
-  .text-hero-gradient {
-    background: linear-gradient(
-      115deg,
-      var(--color-ink) 5%,
-      var(--color-acid) 48%,
-      var(--color-pulse) 105%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .text-glow-acid {
-    text-shadow:
-      0 0 22px color-mix(in oklab, var(--color-acid) 45%, transparent),
-      0 0 80px color-mix(in oklab, var(--color-acid) 20%, transparent);
-  }
-
-  /* faint blueprint grid, radially masked */
+  /* faint graphite grid, radially masked. Was blue-tinted; neutral now. */
   .bg-gridlines {
     background-image:
       linear-gradient(
-        color-mix(in oklab, var(--color-acid) 5%, transparent) 1px,
+        color-mix(in oklab, var(--color-ink) 4%, transparent) 1px,
         transparent 1px
       ),
       linear-gradient(
         90deg,
-        color-mix(in oklab, var(--color-acid) 5%, transparent) 1px,
+        color-mix(in oklab, var(--color-ink) 4%, transparent) 1px,
         transparent 1px
       );
     background-size: 46px 46px;
@@ -203,13 +161,39 @@
     mask-image: radial-gradient(ellipse 85% 70% at 50% 32%, black 25%, transparent 78%);
   }
 
-  /* CRT scanline overlay */
-  .bg-scanlines {
-    background-image: repeating-linear-gradient(
-      0deg,
-      color-mix(in oklab, var(--color-ink) 3%, transparent) 0 1px,
-      transparent 1px 3px
-    );
+  /*
+    Archive grain. This replaced a CRT scanline overlay: same job (stop large
+    flat areas looking like flat CSS) with none of the terminal signifiers.
+    A tiled fractal-noise SVG, applied at ~3% opacity by the caller — it should
+    read as paper fibre you notice only when you look for it.
+  */
+  .bg-archive {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /*
+    An evidence sheet: a document sitting on a surface, with the slight
+    misregistration of a physical print. The rotated backing layer is what sells
+    it — a second sheet, a fraction of a degree off, underneath.
+  */
+  .evidence-sheet {
+    position: relative;
+    isolation: isolate;
+  }
+  .evidence-sheet::before {
+    content: "";
+    position: absolute;
+    inset: -6px -6px -6px -6px;
+    z-index: -1;
+    transform: rotate(-0.5deg);
+    border: 1px solid var(--color-line);
+    /*
+      A solid graphite sheet, not a tinted one. At 55% opacity over charcoal the
+      backing layer was invisible, which defeats the point of having it — the
+      second sheet has to be lighter than the ground to read as a second sheet.
+    */
+    background: var(--color-abyss-900);
   }
 
   /* staggered entrance */
@@ -237,8 +221,6 @@
     opacity: 1;
   }
   .animate-marquee,
-  .animate-scan-band,
-  .animate-flicker,
   .animate-blink-dot,
   .animate-badge-pop {
     animation: none;

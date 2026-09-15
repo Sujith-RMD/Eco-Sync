@@ -13,11 +13,14 @@ import { cn } from "@/lib/utils/cn";
  */
 const IMAGE_LINE = /^\[IMG:([^\]]+)\]$/;
 
-type Block = { kind: "text"; value: string } | { kind: "image"; src: string };
+type Block =
+  | { kind: "text"; value: string }
+  | { kind: "image"; src: string; exhibit: number };
 
 function toBlocks(briefing: string): Block[] {
   const blocks: Block[] = [];
   let buffer: string[] = [];
+  let exhibit = 0;
 
   const flush = () => {
     const value = buffer.join("\n").replace(/^\n+|\n+$/g, "");
@@ -29,7 +32,8 @@ function toBlocks(briefing: string): Block[] {
     const match = IMAGE_LINE.exec(line.trim());
     if (match) {
       flush();
-      blocks.push({ kind: "image", src: `/${match[1]}` });
+      exhibit += 1;
+      blocks.push({ kind: "image", src: `/${match[1]}`, exhibit });
     } else {
       buffer.push(line);
     }
@@ -60,13 +64,33 @@ export function BriefingText({
       {blocks.map((block, index) => {
         if (block.kind === "image") {
           return (
-            // eslint-disable-next-line @next/next/no-img-element -- fixed art in public/, nothing to optimise
-            <img
-              key={index}
-              src={block.src}
-              alt="Recovered evidence"
-              className="block w-full max-w-xl border border-line/70 bg-abyss-950/60"
-            />
+            /*
+              An exhibit, not an illustration. The sheet is inset inside a frame
+              that is itself sitting on a slightly rotated backing sheet (see
+              .evidence-sheet), so the picture reads as a photograph logged into
+              a case file rather than as an image placed on a page. The exhibit
+              number is derived from the order the images appear in the briefing,
+              which means it stays correct if a briefing is reordered.
+            */
+            <figure key={index} className="evidence-sheet w-full max-w-xl">
+              <div className="border border-line/80 bg-abyss-900/40 p-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element -- fixed art in public/, nothing to optimise */}
+                <img
+                  src={block.src}
+                  alt={`Recovered evidence, exhibit ${block.exhibit}`}
+                  className="block w-full"
+                />
+              </div>
+              <figcaption className="mt-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+                {/* Neutral, not red: red means a wrong answer in this interface. */}
+                <span aria-hidden className="h-1.5 w-1.5 shrink-0 bg-dim" />
+                <span className="text-mist">
+                  Exhibit {String(block.exhibit).padStart(2, "0")}
+                </span>
+                <span aria-hidden className="h-2.5 w-px bg-line" />
+                <span>Recovered evidence · custody open</span>
+              </figcaption>
+            </figure>
           );
         }
 

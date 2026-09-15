@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { getSessionView } from "@/lib/auth/session";
 import { Backdrop } from "@/components/fx/backdrop";
+import { CaseFileHeader } from "@/components/layout/case-file-header";
 import { Topbar } from "@/components/layout/topbar";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -29,6 +30,7 @@ export default async function AdminLoginPage() {
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-5 py-14 sm:px-8">
         <div className="mx-auto w-full max-w-md">
+          <CaseFileHeader label="Command deck" className="mb-4" />
           <Panel
             title="Command deck access"
             aside={<ShieldCheck className="h-4 w-4 text-caution" />}

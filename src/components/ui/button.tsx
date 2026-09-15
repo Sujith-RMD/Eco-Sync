@@ -21,7 +21,10 @@ export function buttonClasses(options?: ButtonStyleOptions) {
     size === "md" && "px-5 py-2.5 text-[12.5px]",
     size === "lg" && "px-7 py-3.5 text-[13px]",
     variant === "primary" &&
-      "bg-acid text-abyss-950 hover:shadow-[0_0_34px_-6px_color-mix(in_oklab,var(--color-acid)_65%,transparent)] hover:brightness-110 active:brightness-95",
+      // A drop shadow, not a glow. The old hover state bloomed a blue halo
+      // around the button, which is the effect the whole palette is moving away
+      // from; a physical shadow reads as the button lifting off the page instead.
+      "bg-acid text-abyss-950 hover:brightness-105 hover:shadow-[0_6px_16px_-6px_rgba(0,0,0,0.6)] active:brightness-95",
     variant === "ghost" &&
       "border border-line bg-abyss-900/50 text-mist hover:border-acid/60 hover:text-acid",
     variant === "danger" &&
