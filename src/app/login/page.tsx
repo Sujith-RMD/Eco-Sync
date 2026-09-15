@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getSessionView } from "@/lib/auth/session";
 import { Backdrop } from "@/components/fx/backdrop";
-import { CaseFileHeader } from "@/components/layout/case-file-header";
 import { Topbar } from "@/components/layout/topbar";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -30,7 +29,6 @@ export default async function TeamLoginPage() {
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-8 sm:px-8 sm:py-14">
         <div className="mx-auto w-full max-w-md">
-          <CaseFileHeader label="Team access" className="mb-4" />
           <Panel title="Team access terminal">
             <p className="mb-6 font-mono text-[12px] leading-relaxed text-mist">
               Identify your team. Access codes were issued at check-in.

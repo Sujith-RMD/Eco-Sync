@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { LogoMark } from "@/components/brand/logo";
-import { StatusPill } from "@/components/ui/status-pill";
 
 interface TopbarProps {
   children?: ReactNode;
@@ -32,7 +31,7 @@ export function Topbar({ children }: TopbarProps) {
           </span>
         </span>
         <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
-          {children ?? <StatusPill tone="ok" label="sys.online" />}
+          {children}
         </div>
       </div>
     </header>
