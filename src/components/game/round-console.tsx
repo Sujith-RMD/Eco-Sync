@@ -33,6 +33,8 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { TextInput } from "@/components/ui/field";
 import { BriefingText } from "@/components/game/briefing-text";
 import { AutoRefresh, LockoutBadge, ServerCountdown } from "@/components/game/timer";
+import { InvestigationConsole } from "@/components/investigation/InvestigationConsole";
+import { CaseFile } from "@/components/investigation/CaseFile";
 import { GAME_CONSTANTS } from "@/server/game/constants";
 
 /* -------------------------------------------------------------------------- */
@@ -327,7 +329,9 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
                 / {GAME_CONSTANTS.scoring.wrongAnswerPenaltyCapPerPuzzle} cap
               </p>
             ) : null}
-            <AnswerForm key={puzzle.code} snapshot={snapshot} puzzle={puzzle} />
+            <InvestigationConsole status="active">
+              <AnswerForm key={puzzle.code} snapshot={snapshot} puzzle={puzzle} />
+            </InvestigationConsole>
             <div className="border-t border-line/60 pt-4">
               <HintRequest snapshot={snapshot} puzzle={puzzle} />
             </div>
@@ -405,48 +409,48 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
   const reveal = activeReveal(snapshot.puzzles);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 perspective-container">
       <AutoRefresh intervalMs={8000} />
 
       {/*
-        Instrument strip, not four dashboard cards: one frame, hairline
-        dividers, and the same label/value rhythm in every cell. `gap-px` over a
-        line-coloured background draws the dividers without extra borders, and the
-        2x2 grid holds at 320px where a four-across row would crush the countdown.
+        Instrument strip — wrapped in InvestigationConsole for 3D framing.
+        One frame, hairline dividers, and the same label/value rhythm in every cell.
       */}
-      <div className="grid grid-cols-2 gap-px border border-line/70 bg-line/40 sm:grid-cols-4">
-        <Metric label="Official time">
-          <ServerCountdown
-            endsAt={snapshot.round.endsAt}
-            serverTime={snapshot.round.serverTime}
-            className="font-display text-xl font-bold tracking-tight sm:text-2xl"
-          />
-        </Metric>
-        <Metric label="Score">
-          <span className="font-display text-xl font-bold tabular-nums text-ink sm:text-2xl">
-            {snapshot.score}
-          </span>
-        </Metric>
-        <Metric label="Chain">
-          <span className="font-display text-xl font-bold tabular-nums text-ink sm:text-2xl">
-            {snapshot.solvedCount}
-            <span className="text-dim">/{snapshot.totalCount}</span>
-          </span>
-        </Metric>
-        <Metric label="Current link">
-          {snapshot.finished ? (
-            <StatusPill tone="ok" label="run complete" />
-          ) : roundEnded ? (
-            <StatusPill tone="muted" label="round ended" staticDot />
-          ) : snapshot.currentPuzzleCode ? (
-            <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-caution">
-              {snapshot.currentPuzzleCode}
+      <InvestigationConsole status={roundEnded ? "locked" : snapshot.finished ? "verified" : "active"}>
+        <div className="grid grid-cols-2 gap-px sm:grid-cols-4">
+          <Metric label="Official time">
+            <ServerCountdown
+              endsAt={snapshot.round.endsAt}
+              serverTime={snapshot.round.serverTime}
+              className="font-display text-xl font-bold tracking-tight sm:text-2xl"
+            />
+          </Metric>
+          <Metric label="Score">
+            <span className="font-display text-xl font-bold tabular-nums text-ink sm:text-2xl">
+              {snapshot.score}
             </span>
-          ) : (
-            <StatusPill tone="muted" label="idle" staticDot />
-          )}
-        </Metric>
-      </div>
+          </Metric>
+          <Metric label="Chain">
+            <span className="font-display text-xl font-bold tabular-nums text-ink sm:text-2xl">
+              {snapshot.solvedCount}
+              <span className="text-dim">/{snapshot.totalCount}</span>
+            </span>
+          </Metric>
+          <Metric label="Current link">
+            {snapshot.finished ? (
+              <StatusPill tone="ok" label="run complete" />
+            ) : roundEnded ? (
+              <StatusPill tone="muted" label="round ended" staticDot />
+            ) : snapshot.currentPuzzleCode ? (
+              <span className="font-mono text-sm font-semibold uppercase tracking-[0.18em] text-caution">
+                {snapshot.currentPuzzleCode}
+              </span>
+            ) : (
+              <StatusPill tone="muted" label="idle" staticDot />
+            )}
+          </Metric>
+        </div>
+      </InvestigationConsole>
 
       {/* banners */}
       {snapshot.finished && !roundEnded ? (
@@ -496,14 +500,15 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
         </div>
       ) : null}
 
-      {/* rail + detail */}
-      <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
-        <aside className="relative border border-line/80 bg-abyss-900/70 backdrop-blur-md">
-          <div className="border-b border-line/70 px-4 py-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim sm:tracking-[0.32em]">
-              Puzzle chain
-            </p>
-          </div>
+      {/* rail + detail — wrapped in CaseFile for 3D depth */}
+      <div className="grid gap-4 lg:grid-cols-[300px_1fr] perspective-container">
+        <CaseFile depth="raised" className="lg:order-1">
+          <aside className="relative border border-line/80 bg-abyss-900/70 backdrop-blur-md">
+            <div className="border-b border-line/70 px-4 py-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim sm:tracking-[0.32em]">
+                Puzzle chain
+              </p>
+            </div>
           {/*
             Puzzle selector. This used to be a `flex overflow-x-auto` strip with
             152px chips, so on a phone only ~2 of the 7 (Round 01) or 12 (Round
@@ -552,10 +557,13 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
             })}
           </ol>
         </aside>
+        </CaseFile>
 
-        <div className="min-w-0">
+        <div className="min-w-0 lg:order-2">
           {selected ? (
-            <PuzzleDetail key={selected.code} snapshot={snapshot} puzzle={selected} />
+            <CaseFile depth="elevated">
+              <PuzzleDetail key={selected.code} snapshot={snapshot} puzzle={selected} />
+            </CaseFile>
           ) : null}
         </div>
       </div>

@@ -1,30 +1,29 @@
 @import "tailwindcss";
 
 /*
-  ECO-SYNC: THE BREACH — design system (Tailwind v4)
+  ECO-SYNC: THE BREACH — investigation design system (Tailwind v4)
 
-  The interface is a case file, not an operations console.
+  A classified digital case file inside a physical investigation room.
+  Surfaces are matte charcoal and graphite. Type is warm off-white.
+  The interface reads as paper and evidence on a dark desk, not glass and telemetry.
 
-  Surfaces are matte charcoal and graphite with no blue cast, type is warm
-  off-white on them, and the whole thing reads as paper and evidence rather than
-  glass and telemetry. The blue that used to wash the entire interface is now an
-  accent with a job: interactive elements, active states, links, and the one
-  piece of evidence worth pointing at. Red still means a wrong answer and amber
-  still means a lockout — those two were never decorative and are not now.
-
-  Colour is deliberately NOT brand-derived for surfaces any more. The old ramp
-  pushed the logo's hue (213) to 3-22% lightness, which is why everything read
-  as blue. Charcoal is neutral on purpose: it lets the logo's blue be the only
-  saturated thing on the page instead of one more shade of the background.
+  Colour is NOT brand-derived for surfaces. Charcoal is neutral — it lets the
+  logo's blue be the only saturated thing on the page instead of one more shade
+  of the background.
 */
 @theme {
   --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: var(--font-ibm-plex-serif), "IBM Plex Serif", "Georgia", ui-serif, serif;
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* surfaces — matte charcoal and graphite, warm-neutral, no hue */
   --color-abyss-950: #0e0d0c;
   --color-abyss-900: #171614;
+  --color-abyss-850: #1e1c19;
+  --color-abyss-800: #252320;
   --color-line: #33302b;
+  --color-desk: #1a1816;
+  --color-desk-surface: #201e1b;
 
   /* text — warm off-white, muted steel, desaturated */
   --color-ink: #f0ece5;
@@ -33,20 +32,9 @@
 
   /*
     accents
-
-    `acid` is the ECO-SYNC blue. The mark's own #3f78bc only reaches ~4.3:1 on
-    this charcoal — under the floor for the 10-12px mono this UI is built from —
-    so `acid` stays its bright sibling at ~7.3:1. The logo keeps the true brand
-    blue; the UI keeps a legible version of it.
-
-    `pulse` used to be cyan, which was the single strongest "cyberpunk terminal"
-    signal in the interface. It is now a desaturated olive — the field-marker
-    colour, which is what it is actually used for.
-
-    `alert` and `caution` are semantic and are NOT decorative: red means a wrong
-    answer, amber means a lockout. `confirm` exists so a correct answer has a
-    colour of its own instead of borrowing the interactive blue, which would
-    have made blue mean two things at once.
+    `acid` is the ECO-SYNC blue at ~7.3:1 contrast for legibility.
+    `pulse` is a desaturated olive — field-marker colour.
+    `alert` = wrong answer. `caution` = lockout. `confirm` = correct answer.
   */
   --color-acid: #45a4f7;
   --color-pulse: #96a37f;
@@ -54,54 +42,69 @@
   --color-caution: #e0a94a;
   --color-confirm: #6fae7f;
 
+  /* investigation surface colours */
+  --color-evidence-paper: #f5f1eb;
+  --color-evidence-edge: #d9d3c9;
+  --color-evidence-shadow: rgba(0, 0, 0, 0.35);
+  --color-desk-highlight: rgba(240, 236, 229, 0.04);
+  --color-desk-shadow: rgba(0, 0, 0, 0.5);
+
   /* animation tokens (keyframes co-located below) */
   --animate-blink-dot: blink-dot 2.2s ease-in-out infinite;
   --animate-marquee: marquee 38s linear infinite;
   --animate-reveal-up: reveal-up 0.9s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
-  /* The unread badge must be noticed once, not watched. Short, and only on mount. */
   --animate-badge-pop: badge-pop 0.3s cubic-bezier(0.22, 0.8, 0.24, 1) both;
+  --animate-evidence-in: evidence-in 0.6s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+  --animate-desk-settle: desk-settle 1.2s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+  --animate-file-open: file-open 0.5s cubic-bezier(0.22, 0.8, 0.24, 1) forwards;
+  --animate-verified: verified-pulse 0.4s cubic-bezier(0.22, 0.8, 0.24, 1);
+  --animate-marker-activate: marker-activate 0.3s cubic-bezier(0.22, 0.8, 0.24, 1);
 
   @keyframes badge-pop {
-    from {
-      transform: scale(0.35);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
+    from { transform: scale(0.35); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 
   @keyframes blink-dot {
-    0%,
-    100% {
-      opacity: 1;
-      box-shadow: 0 0 8px 1px currentColor;
-    }
-    50% {
-      opacity: 0.3;
-      box-shadow: none;
-    }
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px 1px currentColor; }
+    50% { opacity: 0.3; box-shadow: none; }
   }
 
   @keyframes marquee {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-50%);
-    }
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
 
   @keyframes reveal-up {
-    from {
-      opacity: 0;
-      transform: translateY(22px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes evidence-in {
+    from { opacity: 0; transform: translateY(12px) translateZ(-20px) rotateX(2deg); }
+    to { opacity: 1; transform: translateY(0) translateZ(0) rotateX(0deg); }
+  }
+
+  @keyframes desk-settle {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes file-open {
+    from { opacity: 0; transform: rotateX(-8deg) translateY(20px); }
+    to { opacity: 1; transform: rotateX(0deg) translateY(0); }
+  }
+
+  @keyframes verified-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-confirm) 40%, transparent); }
+    70% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-confirm) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-confirm) 0%, transparent); }
+  }
+
+  @keyframes marker-activate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
   }
 }
 
@@ -125,7 +128,6 @@
     scrollbar-color: var(--color-line) transparent;
   }
 
-  /* keep autofilled inputs dark */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
@@ -142,18 +144,11 @@
     -webkit-text-stroke: 1.5px color-mix(in oklab, var(--color-ink) 55%, transparent);
   }
 
-  /* faint graphite grid, radially masked. Was blue-tinted; neutral now. */
+  /* faint graphite grid, radially masked */
   .bg-gridlines {
     background-image:
-      linear-gradient(
-        color-mix(in oklab, var(--color-ink) 4%, transparent) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        90deg,
-        color-mix(in oklab, var(--color-ink) 4%, transparent) 1px,
-        transparent 1px
-      );
+      linear-gradient(color-mix(in oklab, var(--color-ink) 4%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--color-ink) 4%, transparent) 1px, transparent 1px);
     background-size: 46px 46px;
   }
 
@@ -161,22 +156,13 @@
     mask-image: radial-gradient(ellipse 85% 70% at 50% 32%, black 25%, transparent 78%);
   }
 
-  /*
-    Archive grain. This replaced a CRT scanline overlay: same job (stop large
-    flat areas looking like flat CSS) with none of the terminal signifiers.
-    A tiled fractal-noise SVG, applied at ~3% opacity by the caller — it should
-    read as paper fibre you notice only when you look for it.
-  */
+  /* archive grain — paper fibre, at the threshold of visibility */
   .bg-archive {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }
 
-  /*
-    An evidence sheet: a document sitting on a surface, with the slight
-    misregistration of a physical print. The rotated backing layer is what sells
-    it — a second sheet, a fraction of a degree off, underneath.
-  */
+  /* evidence sheet: document sitting on a surface with slight misregistration */
   .evidence-sheet {
     position: relative;
     isolation: isolate;
@@ -188,11 +174,6 @@
     z-index: -1;
     transform: rotate(-0.5deg);
     border: 1px solid var(--color-line);
-    /*
-      A solid graphite sheet, not a tinted one. At 55% opacity over charcoal the
-      backing layer was invisible, which defeats the point of having it — the
-      second sheet has to be lighter than the ground to read as a second sheet.
-    */
     background: var(--color-abyss-900);
   }
 
@@ -201,28 +182,133 @@
     opacity: 0;
     animation: var(--animate-reveal-up);
   }
-  .reveal-1 {
-    animation-delay: 0.1s;
+  .reveal-1 { animation-delay: 0.1s; }
+  .reveal-2 { animation-delay: 0.22s; }
+  .reveal-3 { animation-delay: 0.36s; }
+  .reveal-4 { animation-delay: 0.52s; }
+
+  /* investigation evidence entrance */
+  .evidence-reveal {
+    opacity: 0;
+    animation: var(--animate-evidence-in);
   }
-  .reveal-2 {
-    animation-delay: 0.22s;
+
+  /* desk surface texturing */
+  .desk-surface {
+    background:
+      linear-gradient(135deg, var(--color-desk-surface) 0%, var(--color-desk) 100%);
+    box-shadow:
+      inset 0 1px 0 color-mix(in oklab, var(--color-ink) 3%, transparent),
+      inset 0 -1px 0 color-mix(in oklab, var(--color-ink) 2%, transparent);
   }
-  .reveal-3 {
-    animation-delay: 0.36s;
+
+  /* 3D perspective container */
+  .perspective-container {
+    perspective: 1200px;
+    perspective-origin: 50% 30%;
   }
-  .reveal-4 {
-    animation-delay: 0.52s;
+
+  /* 3D layered surface — evidence desk feel */
+  .layer-3d {
+    transform-style: preserve-3d;
+    transform: translateZ(0);
+  }
+
+  /* subtle paper document edge */
+  .document-edge {
+    box-shadow:
+      0 1px 2px var(--color-evidence-shadow),
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 0 0 1px color-mix(in oklab, var(--color-ink) 8%, transparent);
+  }
+
+  /* evidence marker pin */
+  .evidence-pin {
+    position: relative;
+  }
+  .evidence-pin::before {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-acid);
+    box-shadow: 0 0 6px color-mix(in oklab, var(--color-acid) 40%, transparent);
+  }
+
+  /* investigation timeline rail */
+  .timeline-rail {
+    position: relative;
+  }
+  .timeline-rail::before {
+    content: "";
+    position: absolute;
+    left: 11px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-line) 10%,
+      var(--color-line) 90%,
+      transparent
+    );
+  }
+
+  /* suspect dossier card — 3D tilt on hover */
+  .dossier-card {
+    transition: transform 0.3s cubic-bezier(0.22, 0.8, 0.24, 1),
+                box-shadow 0.3s cubic-bezier(0.22, 0.8, 0.24, 1);
+    transform-style: preserve-3d;
+  }
+  .dossier-card:hover {
+    transform: translateY(-4px) rotateX(2deg) rotateY(-1deg);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  /* verified animation trigger */
+  .verified-pulse {
+    animation: var(--animate-verified);
+  }
+
+  /* investigation console frame */
+  .console-frame {
+    border: 1px solid var(--color-line);
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-abyss-900) 90%, transparent),
+      var(--color-abyss-950)
+    );
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 color-mix(in oklab, var(--color-ink) 4%, transparent);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
+  .reveal,
+  .evidence-reveal {
     animation: none;
     opacity: 1;
   }
   .animate-marquee,
   .animate-blink-dot,
-  .animate-badge-pop {
+  .animate-badge-pop,
+  .animate-evidence-in,
+  .animate-desk-settle,
+  .animate-file-open,
+  .animate-verified,
+  .animate-marker-activate {
     animation: none;
+  }
+  .dossier-card:hover {
+    transform: none;
   }
 }

@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Backdrop } from "@/components/fx/backdrop";
+import { InvestigationEnvironment } from "@/components/investigation/InvestigationEnvironment";
 import { Topbar } from "@/components/layout/topbar";
 import { buttonClasses } from "@/components/ui/button";
 
 /*
-  The case-file header block (Case No. / Status / Site / Custody) was removed on
-  the operator's request: the landing page carries identity and scope, nothing
-  that reads as a live custody manifest.
+  The landing page: a classified case file sitting on an investigation desk.
+  The first screen should be cinematic — a dark environment, subtle ambient light,
+  a physical-looking case file in 3D space.
 */
 const PARAMETERS = [
   { label: "Field", value: "61", sub: "teams deployed" },
@@ -27,37 +27,46 @@ const TICKER_ITEMS = [
 export default function LandingPage() {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
-      <Backdrop />
+      <InvestigationEnvironment />
       <Topbar />
 
       <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 sm:px-8">
         <section className="flex flex-1 flex-col justify-center py-10 sm:py-16">
-          {/*
-            The wordmark. This used to be a blue-to-cyan gradient with a
-            text-shadow glow behind it; the glow is what made the page read as a
-            terminal rather than a file, so the identity is now set in flat ink
-            and the subline is outlined. Type does the work.
-          */}
-          <h1 className="font-display font-bold leading-[0.9] tracking-tight">
-            <span className="reveal reveal-1 block text-[clamp(2.5rem,11.5vw,8.5rem)] text-ink">
-              ECO-SYNC
+          {/* Case file identity — printed/embedded into the investigation surface */}
+          <div className="perspective-container">
+            <h1
+              className="font-display font-bold leading-[0.9] tracking-tight layer-3d"
+              style={{ transform: "translateZ(12px)" }}
+            >
+              <span className="reveal reveal-1 block text-[clamp(2.5rem,11.5vw,8.5rem)] text-ink">
+                ECO-SYNC
+              </span>
+              <span className="text-outline reveal reveal-2 mt-2 block text-[clamp(1.65rem,8vw,6.25rem)] font-serif italic tracking-[0.04em] sm:tracking-[0.08em]">
+                THE BREACH
+              </span>
+            </h1>
+          </div>
+
+          {/* Case status — investigation header */}
+          <div className="reveal reveal-2 mt-4 flex items-center gap-3">
+            <span className="h-1.5 w-1.5 rounded-full bg-caution animate-blink-dot" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-caution">
+              Case File // Active
             </span>
-            <span className="text-outline reveal reveal-2 mt-2 block text-[clamp(1.65rem,8vw,6.25rem)] tracking-[0.04em] sm:tracking-[0.08em]">
-              THE BREACH
-            </span>
-          </h1>
+          </div>
 
           <p className="reveal reveal-3 mt-6 max-w-xl text-base leading-relaxed text-mist sm:mt-8 sm:text-lg">
             Sixty-one teams enter a compromised facility. Read the room. Trace the
             evidence. Expose the insider before the trail goes cold.
           </p>
 
+          {/* Primary action — ENTER INVESTIGATION */}
           <div className="reveal reveal-4 mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <Link
               href="/login"
               className={buttonClasses({ size: "lg", className: "w-full sm:w-auto" })}
             >
-              Enter team terminal
+              Enter investigation
               <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/btn:translate-x-1" />
             </Link>
             <Link
@@ -73,6 +82,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Investigation parameters — case metadata */}
         <section className="reveal reveal-4 border-t border-line/70">
           <dl className="grid grid-cols-2 gap-y-8 py-8 sm:grid-cols-4 sm:gap-x-6">
             {PARAMETERS.map((param) => (
@@ -92,6 +102,7 @@ export default function LandingPage() {
         </section>
       </main>
 
+      {/* Ticker — investigation status feed */}
       <footer className="relative z-10 overflow-hidden border-t border-line/70 bg-abyss-950/60 py-2.5">
         <div
           aria-hidden

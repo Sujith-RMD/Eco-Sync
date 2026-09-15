@@ -2,12 +2,18 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { IBM_Plex_Serif, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const display = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
+});
+
+const serif = IBM_Plex_Serif({
+  subsets: ["latin"],
+  variable: "--font-ibm-plex-serif",
+  weight: ["400", "500", "600", "700"],
 });
 
 const mono = JetBrains_Mono({
@@ -35,7 +41,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${serif.variable} ${mono.variable}`}>
       <body className="min-h-dvh bg-abyss-950 font-display text-ink antialiased">
         {children}
         {/*
