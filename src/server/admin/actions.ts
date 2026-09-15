@@ -1,8 +1,9 @@
 "use server";
 
+import { createHash, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   admins,
@@ -42,6 +43,23 @@ function confirmationOk(formData: FormData, phrase: string): boolean {
   return String(formData.get("confirm") ?? "").trim() === phrase;
 }
 
+/**
+ * First-run gate for the seed endpoint. With zero operators the seed form is
+ * publicly reachable, so bootstrap must prove possession of a deployment-side
+ * secret. Compared via SHA-256 digests with timingSafeEqual — fixed-length
+ * digests leak neither length nor content through timing. An unset token
+ * fails closed: the UI path stays locked and operators seed via the CLI
+ * (scripts/seed-event.ts), which talks to the database directly.
+ */
+function seedTokenOk(formData: FormData): boolean {
+  const expected = process.env.FIRST_RUN_SEED_TOKEN?.trim() ?? "";
+  const provided = String(formData.get("seedToken") ?? "").trim();
+  if (expected === "" || provided === "") return false;
+  const expectedDigest = createHash("sha256").update(expected).digest();
+  const providedDigest = createHash("sha256").update(provided).digest();
+  return timingSafeEqual(expectedDigest, providedDigest);
+}
+
 const seedSchema = z.object({
   adminUsername: z
     .string()
@@ -67,6 +85,7 @@ export async function seedEventAction(
   const ip = await getClientIp();
 
   let actorId: number | null = null;
+  let firstRun = false;
   try {
     const [{ value: adminCount }] = await db
       .select({ value: count() })
@@ -74,9 +93,19 @@ export async function seedEventAction(
     if (adminCount > 0) {
       const context = await requireAdmin();
       actorId = context.admin.id;
+    } else {
+      firstRun = true;
     }
   } catch {
     return { status: "error", message: "System is not initialized. Apply the database schema first." };
+  }
+
+  if (firstRun && !seedTokenOk(formData)) {
+    return {
+      status: "error",
+      message:
+        "First-run seeding is locked. Enter this deployment's FIRST_RUN_SEED_TOKEN, or seed via scripts/seed-event.ts.",
+    };
   }
 
   // Keyed to whoever is authenticated (the address is useless here: the whole
@@ -242,7 +271,25 @@ export async function restartEventAction(
 
   const [{ n: teamCount }] = await db.select({ n: count() }).from(teams);
 
-  const wiped = await db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
+    /*
+      Authoritative interlock, now under row locks. The advisory check above
+      runs outside any transaction, so a round that goes live while this wipe
+      is authorizing would otherwise interleave with it. Locking the round rows
+      serializes against startRound's PENDING→ACTIVE update — whichever side
+      commits first wins, and a restart can never wipe a live board.
+    */
+    const lockedRounds = await tx.execute(sql`select code, status from rounds for update`);
+    const liveRound = (
+      lockedRounds.rows as unknown as Array<{ code: string; status: string }>
+    ).find((row) => row.status === "ACTIVE");
+    if (liveRound) {
+      return {
+        kind: "live" as const,
+        label: liveRound.code === "ROUND_1" ? "Round 01" : "Round 02",
+      };
+    }
+
     const votes = await tx.select({ n: count() }).from(culpritVotes);
     const hints = await tx.select({ n: count() }).from(hintUsages);
     const attempts = await tx.select({ n: count() }).from(puzzleAttempts);
@@ -270,15 +317,27 @@ export async function restartEventAction(
       .set({ status: "PENDING", startedAt: null, endsAt: null, endedAt: null });
 
     return {
-      votes: votes[0]?.n ?? 0,
-      hints: hints[0]?.n ?? 0,
-      attempts: attempts[0]?.n ?? 0,
-      progress: progress[0]?.n ?? 0,
-      ledger: ledger[0]?.n ?? 0,
-      participations: participations[0]?.n ?? 0,
-      signInsReleased: throttled.length,
+      kind: "wiped" as const,
+      wiped: {
+        votes: votes[0]?.n ?? 0,
+        hints: hints[0]?.n ?? 0,
+        attempts: attempts[0]?.n ?? 0,
+        progress: progress[0]?.n ?? 0,
+        ledger: ledger[0]?.n ?? 0,
+        participations: participations[0]?.n ?? 0,
+        signInsReleased: throttled.length,
+      },
     };
   });
+
+  if (outcome.kind === "live") {
+    return {
+      status: "error",
+      message: `${outcome.label} is still live. End it first, then restart.`,
+    };
+  }
+
+  const wiped = outcome.wiped;
 
   await logAudit({
     actorType: "ADMIN",
@@ -360,7 +419,22 @@ export async function purgeEventAction(
     };
   }
 
-  await db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
+    // Authoritative interlock under row locks — same reasoning as RESTART, and
+    // a stronger stakes: this transaction also deletes the `rounds` rows, so
+    // the lock is what guarantees a live clock cannot slip past the advisory
+    // check while its board is being destroyed.
+    const lockedRounds = await tx.execute(sql`select code, status from rounds for update`);
+    const liveRound = (
+      lockedRounds.rows as unknown as Array<{ code: string; status: string }>
+    ).find((row) => row.status === "ACTIVE");
+    if (liveRound) {
+      return {
+        kind: "live" as const,
+        label: liveRound.code === "ROUND_1" ? "Round 01" : "Round 02",
+      };
+    }
+
     await tx.delete(culpritVotes);
     await tx.delete(hintUsages);
     await tx.delete(puzzleAttempts);
@@ -373,7 +447,15 @@ export async function purgeEventAction(
     // Credentials are going away with the teams, so their throttles must too.
     await tx.delete(authThrottle);
     await tx.delete(teams);
+    return { kind: "purged" as const };
   });
+
+  if (outcome.kind === "live") {
+    return {
+      status: "error",
+      message: `${outcome.label} is still live. End it first, then purge.`,
+    };
+  }
 
   await logAudit({
     actorType: "ADMIN",

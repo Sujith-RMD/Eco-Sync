@@ -31,8 +31,35 @@ function allowedDevOrigins(): string[] {
   return [...hosts];
 }
 
+/**
+ * Baseline security headers for every response.
+ *
+ * The CSP is deliberately narrow: only the directives that carry zero breakage
+ * risk for this app are set. `script-src`/`style-src` are left open because
+ * Next's hydration inline scripts and the Vercel analytics/insights tags would
+ * need nonce plumbing (middleware + request-scoped CSP) to lock down, and a
+ * broken hydration mid-event costs more than it protects here. The set ones
+ * still cover clickjacking (frame-ancestors + X-Frame-Options), form-target
+ * injection (form-action), MIME sniffing, referrer leakage and privileged APIs.
+ */
+const SECURITY_HEADERS: Array<{ key: string; value: string }> = [
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+  },
+];
+
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   allowedDevOrigins: allowedDevOrigins(),
+  async headers() {
+    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+  },
 };
 
 export default nextConfig;

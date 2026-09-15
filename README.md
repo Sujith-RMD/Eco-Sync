@@ -115,4 +115,6 @@ npm run start              # serve production build
 ## Environment variables
 
 See [`.env.example`](.env.example). `DATABASE_URL` (required),
-`SESSION_TTL_HOURS` (optional, default 12).
+`SESSION_TTL_HOURS` (optional, default 12), `FIRST_RUN_SEED_TOKEN` (optional;
+required by the `/admin` seed form while zero operators exist — unset locks
+that path and the CLI becomes the only first-run seeder).

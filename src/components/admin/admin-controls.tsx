@@ -281,6 +281,12 @@ function SeedForm() {
             />
           </div>
           <TextInput
+            name="seedToken"
+            placeholder="First-run seed token (this deployment's FIRST_RUN_SEED_TOKEN)"
+            autoComplete="off"
+            maxLength={128}
+          />
+          <TextInput
             name="confirm"
             required
             placeholder="Type CONFIRM"
