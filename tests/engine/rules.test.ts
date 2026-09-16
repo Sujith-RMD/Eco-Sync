@@ -85,7 +85,7 @@ describe("scoring model", () => {
     }
     score -= scoring.hintPenalty;
     score += timeBonusPoints(750, scoring.timeBonusPerFullMinute);
-    expect(score).toBe(solvedPoints - 50 - 30 + 24);
+    expect(score).toBe(solvedPoints - 50 - 50 + 24);
   });
 });
 

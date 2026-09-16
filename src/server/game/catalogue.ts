@@ -155,9 +155,10 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "Restore the transmission and follow where it leads.\n" +
       "\n" +
       "33=xedni&nDaXbcZKzsGVksDs01yRDlP_wPmIPL1NLP=tsil&AnDXWiP971t=v?",
-    answer: "t179PiWXDnA",
+    answer: "RICKROLL",
+    answerPlaceholder: "8 LETTER",
     hints: [
-      "It is reversed end to end, not word by word. Turn it around and it reads as a YouTube link — enter the eleven characters that follow v=.",
+      "Reverse the string in the briefing. It reads as a YouTube URL — the video name is the answer.",
     ],
     points: 100,
     difficulty: "medium",
@@ -233,12 +234,6 @@ export interface PuzzleReveal {
  * it to the snapshot only when that puzzle's status is SOLVED.
  */
 export const PUZZLE_REVEALS: Record<string, PuzzleReveal> = {
-  P7: {
-    label: "OPEN RECOVERED TRANSMISSION",
-    url: "https://www.youtube.com/watch?v=t179PiWXDnA&list=PLN1LPImPw_PlDRy10sDskVGszKZcbXaDn&index=33",
-    complete:
-      "TRANSMISSION COMPLETE\nCONNECTION RESTORED.\nNext question unlocked.",
-  },
 };
 
 /* -------------------------------------------------------------------------- */

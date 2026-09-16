@@ -29,7 +29,7 @@ export const GAME_CONSTANTS = {
     winningTeams: 3,
   },
   scoring: {
-    hintPenalty: 30,
+    hintPenalty: 50,
     wrongAnswerPenalty: 25,
     wrongAnswerPenaltyCapPerPuzzle: 50,
     timeBonusPerFullMinute: 2,

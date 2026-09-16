@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   culpritVotes,
@@ -560,6 +560,16 @@ export async function claimHint(input: {
     where: and(eq(puzzles.roundId, round.id), eq(puzzles.code, input.puzzleCode)),
   });
   if (!puzzle) return { ok: false, error: "Unknown puzzle reference." };
+
+  // Per-round hint cap: max 3 hints per round.
+  const roundHintsUsed = await db
+    .select({ count: count() })
+    .from(hintUsages)
+    .innerJoin(puzzles, eq(puzzles.id, hintUsages.puzzleId))
+    .where(and(eq(hintUsages.teamId, teamId), eq(puzzles.roundId, round.id)));
+  if (roundHintsUsed[0]?.count >= 3) {
+    return { ok: false, error: "Hint limit reached — maximum 3 hints per round." };
+  }
 
   // Symmetric with submitAnswer: entering the round bootstraps puzzle #1.
   if (puzzle.orderIndex === 1) {
