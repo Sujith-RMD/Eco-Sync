@@ -32,10 +32,10 @@ async function safeCount(
 export default async function AdminOverviewPage() {
   const { admin } = await requireAdmin();
 
-  let roundRows: Array<{ id: number; code: RoundCode; status: RoundStatus }> = [];
+  let roundRows: Array<{ id: number; code: RoundCode; status: RoundStatus; endsAt: Date | null }> = [];
   try {
     roundRows = await db
-      .select({ id: rounds.id, code: rounds.code, status: rounds.status })
+      .select({ id: rounds.id, code: rounds.code, status: rounds.status, endsAt: rounds.endsAt })
       .from(rounds);
   } catch {
     roundRows = [];

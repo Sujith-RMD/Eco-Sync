@@ -30,11 +30,11 @@ export const GAME_CONSTANTS = {
   },
   scoring: {
     hintPenalty: 30,
-    wrongAnswerPenalty: 10,
+    wrongAnswerPenalty: 25,
     wrongAnswerPenaltyCapPerPuzzle: 50,
     timeBonusPerFullMinute: 2,
     maxRound1Score: 1055,
     /** Server-enforced submission cooldown after a wrong answer. */
-    lockoutSeconds: 30,
+    lockoutSeconds: 10,
   },
 } as const;

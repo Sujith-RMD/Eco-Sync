@@ -20,6 +20,7 @@ import {
   teams,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/auth/guards";
+import { destroySessionsForTeam } from "@/lib/auth/session";
 import { consumeRateLimit } from "@/lib/security/rate-limit";
 import { getClientIp } from "@/lib/security/request";
 import { logAudit } from "@/server/audit/log";
@@ -540,5 +541,129 @@ export async function unlockPuzzleForTeamAction(
   return {
     status: acted || benign ? "ok" : "error",
     message: result.message,
+  };
+}
+
+const forceLogoutSchema = z.object({
+  teamId: z.coerce.number().int().positive(),
+});
+
+/**
+ * Force-logout a team by destroying all their active sessions.
+ * Used when a team is locked out because they're logged in on another device.
+ */
+export async function forceLogoutTeamAction(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const { admin } = await requireAdmin();
+  const ip = await getClientIp();
+
+  const parsed = forceLogoutSchema.safeParse({
+    teamId: formData.get("teamId"),
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "Invalid team reference." };
+  }
+
+  const teamId = parsed.data.teamId;
+
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+    columns: { id: true, name: true },
+  });
+  if (!team) {
+    return { status: "error", message: "Team not found." };
+  }
+
+  await destroySessionsForTeam(teamId);
+
+  await logAudit({
+    actorType: "ADMIN",
+    actorId: admin.id,
+    action: "auth.force_logout",
+    entity: "team",
+    entityId: teamId,
+    meta: { teamName: team.name },
+    ip,
+  });
+
+  revalidatePath(`/admin/teams/${teamId}`);
+  return {
+    status: "ok",
+    message: `All sessions for ${team.name} have been terminated. They can now log in from a new device.`,
+  };
+}
+
+const extendRoundSchema = z.object({
+  roundCode: z.enum(["ROUND_1", "ROUND_2"]),
+  extraMinutes: z.coerce.number().int().min(1).max(60),
+});
+
+/**
+ * Extend an active round's clock by N minutes.
+ * Only works while the round is ACTIVE; refuses on PENDING or ENDED.
+ */
+export async function extendRoundTimeAction(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const { admin } = await requireAdmin();
+  const ip = await getClientIp();
+
+  const parsed = extendRoundSchema.safeParse({
+    roundCode: formData.get("roundCode"),
+    extraMinutes: formData.get("extraMinutes"),
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "Invalid round or time value." };
+  }
+
+  const { roundCode, extraMinutes } = parsed.data;
+
+  const round = await db.query.rounds.findFirst({
+    where: eq(rounds.code, roundCode),
+    columns: { id: true, code: true, status: true, endsAt: true },
+  });
+
+  if (!round) {
+    return { status: "error", message: "Round not found." };
+  }
+
+  if (round.status !== "ACTIVE") {
+    return { status: "error", message: `Round is ${round.status.toLowerCase()}, not active. Only active rounds can be extended.` };
+  }
+
+  if (!round.endsAt) {
+    return { status: "error", message: "Round has no end time set." };
+  }
+
+  const now = new Date();
+  const currentEnd = round.endsAt.getTime();
+  // If the round already expired, extend from now instead of the old end.
+  const base = Math.max(currentEnd, now.getTime());
+  const newEnd = new Date(base + extraMinutes * 60_000);
+
+  await db.update(rounds).set({ endsAt: newEnd }).where(eq(rounds.id, round.id));
+
+  await logAudit({
+    actorType: "ADMIN",
+    actorId: admin.id,
+    action: "round.extend_time",
+    entity: "round",
+    entityId: round.id,
+    meta: {
+      roundCode,
+      extraMinutes,
+      previousEnd: round.endsAt.toISOString(),
+      newEnd: newEnd.toISOString(),
+    },
+    ip,
+  });
+
+  revalidatePath("/admin");
+  return {
+    status: "ok",
+    message: `Round ${roundCode === "ROUND_1" ? "01" : "02"} extended by ${extraMinutes} minute${extraMinutes === 1 ? "" : "s"}. New ends at: ${newEnd.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" })}.`,
   };
 }

@@ -393,6 +393,7 @@ export async function submitAnswer(input: {
         progress.wrong_penalty_points,
         C.scoring.wrongAnswerPenalty,
         C.scoring.wrongAnswerPenaltyCapPerPuzzle,
+        progress.wrong_attempts,
       );
       await tx.insert(puzzleAttempts).values({
         teamId,

@@ -30,7 +30,7 @@ describe("answer normalization", () => {
 
 /* spec §10 / §13 — penalties */
 describe("wrong-answer penalties", () => {
-  it("deducts −10 per wrong answer until the −50 per-puzzle cap", () => {
+  it("first 2 wrong attempts are free, then −25 per wrong answer until the −50 per-puzzle cap", () => {
     let applied = 0;
     const sequence: number[] = [];
     for (let i = 0; i < 8; i += 1) {
@@ -38,11 +38,13 @@ describe("wrong-answer penalties", () => {
         applied,
         scoring.wrongAnswerPenalty,
         scoring.wrongAnswerPenaltyCapPerPuzzle,
+        i,
       );
       sequence.push(deduction);
       applied += deduction;
     }
-    expect(sequence).toEqual([10, 10, 10, 10, 10, 0, 0, 0]);
+    // Attempts 0,1: free. Attempts 2–3: −25 each (cap reached at 50). Attempt 4+: cap hit.
+    expect(sequence).toEqual([0, 0, 25, 25, 0, 0, 0, 0]);
     expect(applied).toBe(scoring.wrongAnswerPenaltyCapPerPuzzle);
   });
 });
@@ -70,19 +72,20 @@ describe("scoring model", () => {
   });
 
   it("computes a simulated full run from pure rules only", () => {
-    // Solves every Round 1 link, two wrongs on one puzzle, one hint,
-    // finishes with 12:30 still on the clock.
+    // Solves every Round 1 link, two wrongs on one puzzle (3rd attempt onward penalized),
+    // one hint, finishes with 12:30 still on the clock.
     const solvedPoints = ROUND1_PUZZLES.reduce((sum, puzzle) => sum + puzzle.points, 0);
     let score = solvedPoints;
     let penaltyApplied = 0;
-    for (let i = 0; i < 2; i += 1) {
-      const d = wrongPenaltyForAttempt(penaltyApplied, 10, 50);
+    // Simulate 4 wrong attempts: first 2 free, next 2 charged (−25 each)
+    for (let i = 0; i < 4; i += 1) {
+      const d = wrongPenaltyForAttempt(penaltyApplied, 25, 50, i);
       score -= d;
       penaltyApplied += d;
     }
     score -= scoring.hintPenalty;
     score += timeBonusPoints(750, scoring.timeBonusPerFullMinute);
-    expect(score).toBe(solvedPoints - 20 - 30 + 24);
+    expect(score).toBe(solvedPoints - 50 - 30 + 24);
   });
 });
 

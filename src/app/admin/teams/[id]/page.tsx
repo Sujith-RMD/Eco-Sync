@@ -16,6 +16,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { CORRECT_SUSPECT_CODE, SUSPECTS } from "@/server/game/catalogue";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { TeamRepairPanel } from "@/components/admin/team-repair";
+import { ForceLogoutPanel } from "@/components/admin/force-logout";
 import { Panel } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { toEventClock, toEventDay } from "@/lib/utils/time";
@@ -274,6 +275,8 @@ export default async function AdminTeamDetailPage({
         </Panel>
 
         <TeamRepairPanel teamId={teamId} teamName={team.name} links={allLinks} />
+
+        <ForceLogoutPanel teamId={teamId} teamName={team.name} />
 
         <div className="grid gap-4 xl:grid-cols-2">
           <Panel title="Score ledger">

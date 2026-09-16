@@ -93,7 +93,17 @@ export async function getSessionView(): Promise<SessionView | null> {
   };
 }
 
-/** Destroys all active sessions for a given team, enforcing single-session-per-team. */
+/** Checks whether a team currently has an active (non-expired) session. */
+export async function hasActiveTeamSession(teamId: number): Promise<boolean> {
+  const now = new Date();
+  const record = await db.query.sessions.findFirst({
+    where: sql`${sessions.subject} = 'TEAM' AND ${sessions.teamId} = ${teamId} AND ${sessions.expiresAt} > ${now}`,
+    columns: { id: true },
+  });
+  return record !== undefined;
+}
+
+/** Destroys all active sessions for a given team (admin force-logout). */
 export async function destroySessionsForTeam(teamId: number): Promise<void> {
   await db.delete(sessions).where(
     sql`${sessions.subject} = 'TEAM' AND ${sessions.teamId} = ${teamId}`,

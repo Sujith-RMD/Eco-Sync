@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { admins, teams } from "@/db/schema";
 import { DUMMY_PASSWORD_HASH, verifyPassword } from "@/lib/auth/password";
-import { createSession, destroySession, destroySessionsForTeam, getSessionView } from "@/lib/auth/session";
+import { createSession, destroySession, destroySessionsForTeam, getSessionView, hasActiveTeamSession } from "@/lib/auth/session";
 import {
   guardAdminSignIn,
   guardTeamSignIn,
@@ -113,8 +113,23 @@ export async function loginTeam(
     ip,
   });
 
-  // Invalidate any existing session for this team (single-session-per-team).
-  await destroySessionsForTeam(team.id);
+  // Single-session-per-team: block login if already active elsewhere.
+  if (await hasActiveTeamSession(team.id)) {
+    await logAudit({
+      actorType: "TEAM",
+      actorId: team.id,
+      action: "auth.login.denied",
+      entity: "team",
+      entityId: team.id,
+      meta: { reason: "already_logged_in" },
+      ip,
+    });
+    return {
+      ok: false,
+      message: "Already logged in on another device. Logout from there first, or ask the operator to force-logout.",
+    };
+  }
+
   await createSession({ subject: "TEAM", teamId: team.id, ip, userAgent });
   // This team is proven; drop its typo history so it starts the round clean.
   await noteTeamSignInSuccess(teamName);

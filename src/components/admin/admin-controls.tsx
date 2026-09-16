@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ClipboardCopy,
+  Clock,
   Loader2,
   Play,
   RotateCcw,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import {
   endRoundAction,
+  extendRoundTimeAction,
   purgeEventAction,
   qualifyTop15Action,
   restartEventAction,
@@ -107,17 +109,50 @@ function EndRoundForm({ code, label }: { code: RoundCode; label: string }) {
   );
 }
 
+function ExtendRoundForm({ code, label }: { code: RoundCode; label: string }) {
+  const [state, formAction] = useActionState(extendRoundTimeAction, initialAdminActionState);
+  const { pending } = useFormStatus();
+  return (
+    <form action={formAction} className="space-y-3">
+      <input type="hidden" name="roundCode" value={code} />
+      <TextInput
+        name="extraMinutes"
+        required
+        type="number"
+        min={1}
+        max={60}
+        placeholder="Minutes to add"
+        autoComplete="off"
+      />
+      <Button type="submit" size="sm" disabled={pending}>
+        <SubmitIcon idle={<Clock className="h-3.5 w-3.5" />} pending={pending} />
+        Extend {label}
+      </Button>
+      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
+        1–60 minutes. Adds time from now (or from the current end time if it hasn't expired yet).
+      </p>
+      <ActionMessage state={state} />
+    </form>
+  );
+}
+
 function RoundControlCard({
   code,
   label,
   status,
   meta,
+  endsAt,
 }: {
   code: RoundCode;
   label: string;
   status: RoundStatus | undefined;
   meta: string;
+  endsAt?: Date | null;
 }) {
+  const endsAtLabel = endsAt
+    ? `ends ${endsAt.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit" })}`
+    : null;
+
   return (
     <Panel
       title={label}
@@ -132,8 +167,20 @@ function RoundControlCard({
       <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.16em] text-dim">
         {meta}
       </p>
+      {endsAtLabel && status === "ACTIVE" ? (
+        <p className="mb-4 font-mono text-[11px] text-acid">
+          {endsAtLabel}
+        </p>
+      ) : null}
       {status === "PENDING" ? <StartRoundForm code={code} label={label} /> : null}
-      {status === "ACTIVE" ? <EndRoundForm code={code} label={label} /> : null}
+      {status === "ACTIVE" ? (
+        <div className="space-y-4">
+          <ExtendRoundForm code={code} label={label} />
+          <div className="border-t border-line/60 pt-3">
+            <EndRoundForm code={code} label={label} />
+          </div>
+        </div>
+      ) : null}
       {status === "ENDED" ? (
         <p className="font-mono text-[12px] text-dim">
           Round concluded. The ledger is closed.
@@ -353,9 +400,9 @@ export function AdminControls({
   rounds,
 }: {
   seeded: boolean;
-  rounds: Array<{ code: RoundCode; status: RoundStatus }>;
+  rounds: Array<{ code: RoundCode; status: RoundStatus; endsAt: Date | null }>;
 }) {
-  const statusOf = (code: RoundCode) => rounds.find((r) => r.code === code)?.status;
+  const roundMeta = (code: RoundCode) => rounds.find((r) => r.code === code);
 
   return (
     <div className="space-y-4">
@@ -363,13 +410,15 @@ export function AdminControls({
         <RoundControlCard
           code="ROUND_1"
           label="Round 01"
-          status={statusOf("ROUND_1")}
+          status={roundMeta("ROUND_1")?.status}
+          endsAt={roundMeta("ROUND_1")?.endsAt}
           meta={`${GAME_CONSTANTS.round1.durationMinutes}:00 window · ${GAME_CONSTANTS.round1.puzzleCount} links · top ${GAME_CONSTANTS.round1.qualifyingTeams} advance`}
         />
         <RoundControlCard
           code="ROUND_2"
           label="Round 02"
-          status={statusOf("ROUND_2")}
+          status={roundMeta("ROUND_2")?.status}
+          endsAt={roundMeta("ROUND_2")?.endsAt}
           meta={`${GAME_CONSTANTS.round2.durationMinutes}:00 window · ${GAME_CONSTANTS.round2.puzzleCount} links · vote unseals at the end`}
         />
         <Panel title="Qualification">

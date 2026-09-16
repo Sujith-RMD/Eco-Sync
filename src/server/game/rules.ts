@@ -25,13 +25,17 @@ export function normalizeAnswer(raw: string): string {
 
 /**
  * Wrong-answer deduction for one attempt, honoring the per-puzzle cap.
+ * Returns 0 for the first 2 wrong attempts (grace period).
  * Returns 0 once the cap is already reached.
  */
 export function wrongPenaltyForAttempt(
   penaltyAlreadyApplied: number,
   perAttemptPenalty: number,
   capPerPuzzle: number,
+  wrongAttempts: number,
 ): number {
+  // First 2 wrong attempts per puzzle are penalty-free.
+  if (wrongAttempts < 2) return 0;
   const remaining = Math.max(0, capPerPuzzle - penaltyAlreadyApplied);
   return Math.min(perAttemptPenalty, remaining);
 }
