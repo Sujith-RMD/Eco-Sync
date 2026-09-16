@@ -21,6 +21,8 @@ import type { AnswerInputView } from "@/types/game";
  * unit-testable, and importing this one would drag the guard in behind it.
  */
 
+export type PuzzleDifficulty = "easy" | "medium" | "hard";
+
 export interface PuzzleSeed {
   code: string;
   orderIndex: number;
@@ -30,6 +32,7 @@ export interface PuzzleSeed {
   answer: string;
   hints: string[];
   points: number;
+  difficulty?: PuzzleDifficulty;
   /**
    * Presentation for the answer box. Never affects grading — `answer` is what
    * the engine compares, and these three only shape the input a team types
@@ -64,6 +67,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "The digits of 02:17 add up to a number. Move each letter back that many places in the alphabet. Enter one word, no spaces.",
     ],
     points: 100,
+    difficulty: "medium",
   },
   {
     code: "P2",
@@ -82,7 +86,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "Only the entry scanner is wrong. Push every ENTRY time forward by 10 minutes and leave the exit times as printed. Enter the four digits.",
     ],
-    points: 100,
+    points: 75,
+    difficulty: "easy",
   },
   {
     code: "P3",
@@ -94,7 +99,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "All four fragments are inside your own room, never in the corridor. Join them in the order they are numbered and enter one word.",
     ],
-    points: 100,
+    points: 75,
+    difficulty: "easy",
     answerPlaceholder: "ASKEY YOUR COMPUTER",
   },
   {
@@ -106,7 +112,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "The intruder left a mark on the machine in your room. What did they plug into the terminal?",
     answer: "USB",
     hints: ["Three letters. Name the kind of device, not a brand."],
-    points: 100,
+    points: 75,
+    difficulty: "easy",
     answerPlaceholder: "ABC",
     answerMaxLength: 3,
     answerLettersOnly: true,
@@ -122,7 +129,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "Read what is on the door, then move one key to the LEFT on a QWERTY keyboard for every character. One word.",
     ],
-    points: 100,
+    points: 125,
+    difficulty: "hard",
   },
   {
     code: "P6",
@@ -134,7 +142,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "Copy the word off the glass exactly as it appears, then read your copy from the other end. Five letters.",
     ],
-    points: 100,
+    points: 75,
+    difficulty: "easy",
   },
   {
     code: "P7",
@@ -151,6 +160,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "It is reversed end to end, not word by word. Turn it around and it reads as a YouTube link — enter the eleven characters that follow v=.",
     ],
     points: 100,
+    difficulty: "medium",
   },
   {
     code: "P8",
@@ -165,7 +175,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "Every pair of hex digits is one character. 52 is R and 45 is E — read all eight pairs the same way.",
     ],
-    points: 100,
+    points: 125,
+    difficulty: "hard",
   },
   {
     code: "P9",
@@ -181,7 +192,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "Every failing row names the same system in the first column, and the water, power and food rows around them stay NORMAL.",
     ],
-    points: 100,
+    points: 75,
+    difficulty: "easy",
   },
   {
     code: "P10",
@@ -196,6 +208,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
     ],
     points: 150,
+    difficulty: "hard",
   },
 ];
 

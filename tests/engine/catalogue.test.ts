@@ -31,9 +31,21 @@ describe("Round 1 catalogue", () => {
     expect(ROUND1_PUZZLES.map((p) => p.orderIndex)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
-  it("awards +100 for P1–P9 and +150 for the P10 capstone", () => {
-    for (const puzzle of ROUND1_PUZZLES.slice(0, -1)) {
-      expect(puzzle.points).toBe(GAME_CONSTANTS.round1.pointsPerPuzzle);
+  it("awards points based on difficulty tier", () => {
+    const easyPuzzles = ROUND1_PUZZLES.filter((p) => p.difficulty === "easy");
+    const mediumPuzzles = ROUND1_PUZZLES.filter((p) => p.difficulty === "medium");
+    const hardPuzzles = ROUND1_PUZZLES.filter(
+      (p) => p.difficulty === "hard" && p.code !== "P10",
+    );
+
+    for (const puzzle of easyPuzzles) {
+      expect(puzzle.points).toBe(GAME_CONSTANTS.round1.easyPoints);
+    }
+    for (const puzzle of mediumPuzzles) {
+      expect(puzzle.points).toBe(GAME_CONSTANTS.round1.mediumPoints);
+    }
+    for (const puzzle of hardPuzzles) {
+      expect(puzzle.points).toBe(GAME_CONSTANTS.round1.hardPoints);
     }
     expect(ROUND1_PUZZLES[ROUND1_PUZZLES.length - 1]!.points).toBe(
       GAME_CONSTANTS.round1.finalPuzzlePoints,
@@ -85,7 +97,7 @@ describe("Round 1 catalogue", () => {
   it("keeps the case code last, since its letters resolve against earlier answers", () => {
     const last = ROUND1_PUZZLES[ROUND1_PUZZLES.length - 1]!;
     expect(last.points).toBe(GAME_CONSTANTS.round1.finalPuzzlePoints);
-    expect(last.points).toBeGreaterThan(GAME_CONSTANTS.round1.pointsPerPuzzle);
+    expect(last.points).toBeGreaterThan(GAME_CONSTANTS.round1.hardPoints);
   });
 });
 

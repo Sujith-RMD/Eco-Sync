@@ -58,15 +58,14 @@ describe("scoring model", () => {
   });
 
   it("theoretical Round 1 maximum equals the configured ceiling", () => {
-    const base =
-      round1.pointsPerPuzzle * (round1.puzzleCount - 1) + round1.finalPuzzlePoints;
+    const base = ROUND1_PUZZLES.reduce((sum, puzzle) => sum + puzzle.points, 0);
     const bonus = timeBonusPoints(
       round1.durationMinutes * 60,
       scoring.timeBonusPerFullMinute,
     );
-    // Pinned as a literal as well as a symbol: 9×100 + 150 + 80 at a 40-minute
-    // round. A silent change to either the points or the clock trips this.
-    expect(base + bonus).toBe(1130);
+    // Base is 975 (5×75 easy + 2×100 medium + 2×125 hard + 150 final)
+    // Plus 80 time bonus (40 min × 2 pts/min)
+    expect(base + bonus).toBe(1055);
     expect(base + bonus).toBe(scoring.maxRound1Score);
   });
 
