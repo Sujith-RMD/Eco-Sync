@@ -18,7 +18,7 @@ import {
   SendHorizontal,
   Trophy,
 } from "lucide-react";
-import { requestHintAction, submitAnswerAction, acknowledgeTransmissionAction } from "@/server/team/actions";
+import { requestHintAction, submitAnswerAction } from "@/server/team/actions";
 import { emitStorylineSignal } from "@/lib/storyline/signal";
 import {
   initialSubmitState,
@@ -212,69 +212,6 @@ function HintRequest({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Pu
 }
 
 /* -------------------------------------------------------------------------- */
-/* External reveal (a puzzle that hands over a link once it is broken)         */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Opening the link must not cost the player their game tab, so it is a plain
- * anchor with `target="_blank"` rather than `window.open` — no popup blocker to
- * argue with, and the console keeps its state. Nothing tries to detect whether
- * the video was actually watched: `opened` is set on the click itself, so the
- * confirmation is waiting the moment they switch back.
- */
-function RevealCard({ puzzle, roundCode }: { puzzle: PuzzleSnapshot; roundCode: string }) {
-  const reveal = puzzle.reveal;
-  const router = useRouter();
-  const [opened, setOpened] = useState(false);
-  const [acknowledging, setAcknowledging] = useState(false);
-  if (!reveal) return null;
-
-  const handleOpen = async () => {
-    setAcknowledging(true);
-    // Acknowledge the transmission to unlock the next puzzle
-    const result = await acknowledgeTransmissionAction(roundCode as RoundCode, puzzle.code);
-    if (result.ok) {
-      // Signal that new storyline content was unlocked
-      emitStorylineSignal("unlocked", { roundCode: roundCode as RoundCode });
-    }
-    setOpened(true);
-    setAcknowledging(false);
-    // Refresh to show the newly unlocked puzzle
-    router.refresh();
-  };
-
-  return (
-    <div className="flex flex-col gap-3 border border-acid/40 bg-acid/10 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-      {opened ? (
-        <p className="whitespace-pre-line font-mono text-[12px] uppercase leading-relaxed tracking-[0.12em] text-acid">
-          {reveal.complete}
-        </p>
-      ) : (
-        <p className="flex min-w-0 items-start gap-2.5 font-mono text-[12px] leading-relaxed text-acid">
-          <Radio className="mt-0.5 h-4 w-4 shrink-0" />
-          Link {puzzle.code} broken. The recovered transmission is ready to play.
-        </p>
-      )}
-
-      {opened ? null : (
-        <a
-          href={reveal.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={handleOpen}
-          className={cn(buttonClasses({ variant: "primary", size: "sm" }), "shrink-0")}
-        >
-          {acknowledging ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : null}
-          {reveal.label}
-        </a>
-      )}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
 /* Puzzle detail panel                                                         */
 /* -------------------------------------------------------------------------- */
 
@@ -391,21 +328,6 @@ function statusIcon(puzzle: PuzzleSnapshot) {
   return <Lock className="h-4 w-4 text-dim" />;
 }
 
-/**
- * The link whose reveal should be on screen: solved, and not yet superseded.
- * Solving a puzzle moves the console on to the next link, so the hand-over
- * cannot live in the puzzle panel — it clears once the *following* link is
- * broken, which is exactly the window its "next question unlocked" wording
- * describes.
- */
-function activeReveal(puzzles: PuzzleSnapshot[]): PuzzleSnapshot | null {
-  const solved = puzzles.find((p) => p.reveal !== null && p.status === "SOLVED");
-  if (!solved) return null;
-  const next = puzzles.find((p) => p.orderIndex === solved.orderIndex + 1);
-  if (next && next.status === "SOLVED") return null;
-  return solved;
-}
-
 export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
   /*
     Which link the console shows is *derived*, not mirrored in an effect. A tap
@@ -428,7 +350,6 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
     null;
 
   const roundEnded = snapshot.round.status === "ENDED";
-  const reveal = activeReveal(snapshot.puzzles);
 
   return (
     <div className="space-y-5 perspective-container">
@@ -484,8 +405,6 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
           </p>
         </div>
       ) : null}
-
-      {reveal ? <RevealCard key={reveal.code} puzzle={reveal} roundCode={snapshot.round.code} /> : null}
 
       {roundEnded ? (
         <div className="flex items-start gap-3 border border-line bg-abyss-900/60 px-4 py-3.5">

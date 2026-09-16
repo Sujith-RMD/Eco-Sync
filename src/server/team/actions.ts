@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { requireTeam } from "@/lib/auth/guards";
 import { castVote, claimHint, submitAnswer } from "@/server/game/engine";
-import { acknowledgeTransmission } from "@/server/game/engine";
 import type { SubmitActionState, VoteActionState } from "@/types/game";
 import type { RoundCode } from "@/types/game";
 
@@ -107,25 +106,5 @@ export async function castVoteAction(
     default:
       return { status: "error", message: result.message };
   }
-}
-
-/** Acknowledge a transmission reveal and unlock the next puzzle. */
-export async function acknowledgeTransmissionAction(
-  roundCode: RoundCode,
-  puzzleCode: string,
-): Promise<{ ok: boolean; message: string }> {
-  const { team } = await requireTeam();
-
-  if (roundCode !== "ROUND_1" && roundCode !== "ROUND_2") {
-    return { ok: false, message: "Malformed request." };
-  }
-  if (!puzzleCode || puzzleCode.length > 16) {
-    return { ok: false, message: "Malformed request." };
-  }
-
-  const result = await acknowledgeTransmission({ teamId: team.id, roundCode, puzzleCode });
-  revalidatePath(roundPath(roundCode));
-  revalidatePath("/lobby");
-  return { ok: result.outcome === "UNLOCKED", message: result.message };
 }
 

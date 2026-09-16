@@ -33,16 +33,18 @@ test-suite.
   unique-constraint backstops (one progress row per team+puzzle, one vote
   per team), and immutable `score_events` ledger entries.
 - Server clock (round `startedAt`/`endsAt`) drives timers, expiry checks,
-  lockouts (30 s), and the +2/minute time bonus. Client countdowns are
+  lockouts (10 s), and the +2/minute time bonus. Client countdowns are
   cosmetic.
 
 ## Game content (from the supplied documents)
 
-- **Round 1** — 10 sequential puzzles, 40:00, +100 per puzzle (+150 final),
-  hint −30, wrong −10 capped at −50/puzzle, +2/full minute. Max 1130.
-  P8/P9 carry their evidence inline as an `[IMG:…]` briefing line. P7
-  RECOVERED TRANSMISSION hands the team an external link once solved; the
-  snapshot exposes it on `SOLVED` only, because the URL contains the answer.
+- **Round 1** — 10 sequential puzzles, 40:00, points tiered by difficulty
+  (75 easy / 100 medium / 125 hard; the final case code P10 is 150), hint −50,
+  the first two wrong answers per puzzle free then −25 capped at −50/puzzle,
+  +2/full minute. Max 1055. P8/P9 carry their evidence inline as an
+  `[IMG:…]` briefing line. P7 RECOVERED TRANSMISSION embeds the reversed
+  transmission URL in its own briefing — the team restores the string and
+  follows where it leads.
 - **Round 2** — 8 links in play order: S1 → S3 → S4 → S5 → S6 → S7 → S8 →
   `LAST` (the 150-point final code) → sealed culprit vote, 75:00. S7 is a
   physical prop pair (`props/s7/`); its answer is authored and the QR codes are

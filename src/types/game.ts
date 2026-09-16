@@ -46,12 +46,6 @@ export interface PuzzleSnapshot {
   /** Only hints actually claimed by this team. */
   usedHints: string[];
   /**
-   * External link handed over once this link is broken; null until then.
-   * Attached server-side rather than shipped as a component constant, because
-   * the URL carries the answer itself.
-   */
-  reveal: PuzzleRevealView | null;
-  /**
    * How the answer box presents itself. Always present — every puzzle has an
    * input, so the component never has to branch on null.
    */
@@ -68,13 +62,6 @@ export interface AnswerInputView {
   maxLength: number;
   /** Restrict to A–Z; the browser refuses digits and punctuation outright. */
   lettersOnly: boolean;
-}
-
-/** Shape of `PuzzleSnapshot.reveal` — only ever sent once the link is broken. */
-export interface PuzzleRevealView {
-  label: string;
-  url: string;
-  complete: string;
 }
 
 export interface SuspectOption {

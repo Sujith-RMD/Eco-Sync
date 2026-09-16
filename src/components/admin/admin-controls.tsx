@@ -59,15 +59,37 @@ function ActionMessage({ state }: { state: AdminActionState | SeedActionState })
   );
 }
 
-function SubmitIcon({ idle, pending }: { idle: React.ReactNode; pending?: boolean }) {
-  return pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{idle}</>;
+/**
+ * Submit button as its own component, because `useFormStatus` only reports on a
+ * form when it is called from a component *inside* that form. The seven controls
+ * below used to call it in the component that renders the `<form>` itself,
+ * where it reads no ancestor context and `pending` is permanently false — the
+ * buttons never disabled and never spun, so an operator could double-tap
+ * RESTART or PURGE while the first request was still in flight. Same fix as
+ * `team-repair.tsx`'s `RepairSubmit`.
+ */
+function SubmitButton({
+  children,
+  idle,
+  variant,
+}: {
+  children: React.ReactNode;
+  idle: React.ReactNode;
+  variant?: "primary" | "ghost" | "danger";
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="sm" variant={variant} disabled={pending}>
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : idle}
+      {children}
+    </Button>
+  );
 }
 
 /* -------------------------------------------------------------------------- */
 
 function StartRoundForm({ code, label }: { code: RoundCode; label: string }) {
   const [state, formAction] = useActionState(startRoundAction, initialAdminActionState);
-  const { pending } = useFormStatus();
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="roundCode" value={code} />
@@ -78,10 +100,7 @@ function StartRoundForm({ code, label }: { code: RoundCode; label: string }) {
         autoComplete="off"
         className="uppercase"
       />
-      <Button type="submit" size="sm" disabled={pending}>
-        <SubmitIcon idle={<Play className="h-3.5 w-3.5" />} pending={pending} />
-        Start {label}
-      </Button>
+      <SubmitButton idle={<Play className="h-3.5 w-3.5" />}>Start {label}</SubmitButton>
       <ActionMessage state={state} />
     </form>
   );
@@ -89,7 +108,6 @@ function StartRoundForm({ code, label }: { code: RoundCode; label: string }) {
 
 function EndRoundForm({ code, label }: { code: RoundCode; label: string }) {
   const [state, formAction] = useActionState(endRoundAction, initialAdminActionState);
-  const { pending } = useFormStatus();
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="roundCode" value={code} />
@@ -100,10 +118,9 @@ function EndRoundForm({ code, label }: { code: RoundCode; label: string }) {
         autoComplete="off"
         className="uppercase"
       />
-      <Button type="submit" size="sm" variant="danger" disabled={pending}>
-        <SubmitIcon idle={<Square className="h-3.5 w-3.5" />} pending={pending} />
+      <SubmitButton idle={<Square className="h-3.5 w-3.5" />} variant="danger">
         End {label}
-      </Button>
+      </SubmitButton>
       <ActionMessage state={state} />
     </form>
   );
@@ -111,7 +128,6 @@ function EndRoundForm({ code, label }: { code: RoundCode; label: string }) {
 
 function ExtendRoundForm({ code, label }: { code: RoundCode; label: string }) {
   const [state, formAction] = useActionState(extendRoundTimeAction, initialAdminActionState);
-  const { pending } = useFormStatus();
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="roundCode" value={code} />
@@ -124,12 +140,9 @@ function ExtendRoundForm({ code, label }: { code: RoundCode; label: string }) {
         placeholder="Minutes to add"
         autoComplete="off"
       />
-      <Button type="submit" size="sm" disabled={pending}>
-        <SubmitIcon idle={<Clock className="h-3.5 w-3.5" />} pending={pending} />
-        Extend {label}
-      </Button>
+      <SubmitButton idle={<Clock className="h-3.5 w-3.5" />}>Extend {label}</SubmitButton>
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-dim">
-        1–60 minutes. Adds time from now (or from the current end time if it hasn't expired yet).
+        1–60 minutes. Adds time from now (or from the current end time if it hasn&apos;t expired yet).
       </p>
       <ActionMessage state={state} />
     </form>
@@ -199,7 +212,6 @@ function RoundControlCard({
 
 function QualifyForm() {
   const [state, formAction] = useActionState(qualifyTop15Action, initialAdminActionState);
-  const { pending } = useFormStatus();
   return (
     <form action={formAction} className="space-y-3">
       <TextInput
@@ -209,10 +221,7 @@ function QualifyForm() {
         autoComplete="off"
         className="uppercase"
       />
-      <Button type="submit" size="sm" disabled={pending}>
-        <SubmitIcon idle={<Trophy className="h-3.5 w-3.5" />} pending={pending} />
-        Qualify top 15
-      </Button>
+      <SubmitButton idle={<Trophy className="h-3.5 w-3.5" />}>Qualify top 15</SubmitButton>
       <ActionMessage state={state} />
     </form>
   );
@@ -220,7 +229,6 @@ function QualifyForm() {
 
 function PurgeForm() {
   const [state, formAction] = useActionState(purgeEventAction, initialAdminActionState);
-  const { pending } = useFormStatus();
   return (
     <form action={formAction} className="space-y-3">
       <TextInput
@@ -230,10 +238,9 @@ function PurgeForm() {
         autoComplete="off"
         className="uppercase"
       />
-      <Button type="submit" size="sm" variant="danger" disabled={pending}>
-        <SubmitIcon idle={<Trash2 className="h-3.5 w-3.5" />} pending={pending} />
+      <SubmitButton idle={<Trash2 className="h-3.5 w-3.5" />} variant="danger">
         Purge everything
-      </Button>
+      </SubmitButton>
       <ActionMessage state={state} />
     </form>
   );
@@ -246,7 +253,6 @@ function PurgeForm() {
  */
 function RestartForm() {
   const [state, formAction] = useActionState(restartEventAction, initialAdminActionState);
-  const { pending } = useFormStatus();
   return (
     <div className="space-y-4">
       <p className="font-mono text-[11px] leading-relaxed text-mist">
@@ -268,10 +274,9 @@ function RestartForm() {
           autoComplete="off"
           className="uppercase"
         />
-        <Button type="submit" size="sm" variant="danger" disabled={pending}>
-          <SubmitIcon idle={<RotateCcw className="h-3.5 w-3.5" />} pending={pending} />
+        <SubmitButton idle={<RotateCcw className="h-3.5 w-3.5" />} variant="danger">
           Restart event — wipe and replay
-        </Button>
+        </SubmitButton>
         <p className="font-mono text-[10px] uppercase leading-relaxed tracking-[0.1em] text-dim sm:tracking-[0.18em]">
           Guarded: refused while a round is live — end it first. Also releases
           any team paused for too many wrong codes.
@@ -298,7 +303,6 @@ function RestartForm() {
 
 function SeedForm() {
   const [state, formAction] = useActionState(seedEventAction, initialSeedActionState);
-  const { pending } = useFormStatus();
   const [copied, setCopied] = useState(false);
 
   const credentialList = state.result?.teams ?? [];
@@ -340,10 +344,9 @@ function SeedForm() {
             autoComplete="off"
             className="uppercase"
           />
-          <Button type="submit" size="sm" disabled={pending}>
-            <SubmitIcon idle={<ShieldQuestion className="h-3.5 w-3.5" />} pending={pending} />
+          <SubmitButton idle={<ShieldQuestion className="h-3.5 w-3.5" />}>
             Seed event data
-          </Button>
+          </SubmitButton>
         </form>
       ) : (
         <div className="space-y-3">

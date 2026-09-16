@@ -37,8 +37,6 @@ function puzzle(overrides: Partial<PuzzleSnapshot> & { code: string }): PuzzleSn
     solvedAt: null,
     hintsAvailable: 0,
     usedHints: [],
-    // Null unless the link is SOLVED — the reveal URL carries the answer.
-    reveal: null,
     answerInput: { placeholder: "ENTER ANSWER", maxLength: 255, lettersOnly: false },
     ...overrides,
   };

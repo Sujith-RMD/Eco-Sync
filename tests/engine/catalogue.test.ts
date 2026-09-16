@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   CORRECT_SUSPECT_CODE,
   FINAL_CODE_PUZZLE_CODE,
-  PUZZLE_REVEALS,
   ROUND1_PUZZLES,
   ROUND2_PUZZLES,
   SUSPECTS,
@@ -79,18 +78,6 @@ describe("Round 1 catalogue", () => {
       expect(answer.length).toBeLessThanOrEqual(input.maxLength);
       if (input.lettersOnly) expect(answer).toMatch(/^[A-Z]+$/);
       expect(input.placeholder.trim().length).toBeGreaterThan(0);
-    }
-  });
-
-  it("gates every reveal on SOLVED, because the URL carries the answer", () => {
-    for (const [code, reveal] of Object.entries(PUZZLE_REVEALS)) {
-      const puzzle = ROUND1_PUZZLES.find((p) => p.code === code);
-      expect(puzzle, `reveal ${code} has no matching puzzle`).toBeDefined();
-      // The reveal URL embeds the answer, so shipping it on UNLOCKED would hand
-      // the puzzle over. engine.ts attaches it on SOLVED only — never widen that.
-      expect(reveal.url.toUpperCase()).toContain(normalizeAnswer(puzzle!.answer));
-      expect(reveal.label.trim().length).toBeGreaterThan(0);
-      expect(reveal.complete.trim().length).toBeGreaterThan(0);
     }
   });
 

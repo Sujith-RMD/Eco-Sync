@@ -111,7 +111,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # 77 tests across 8 files. No database, no environment: every rule under
+      # 80 tests across 8 files. No database, no environment: every rule under
       # test is a pure function. Vitest exits non-zero when it finds no test
       # files, so an empty suite cannot pass as a green one.
       - name: Engine rule tests

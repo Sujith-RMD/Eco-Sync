@@ -87,18 +87,31 @@ export async function seedEventAction(
 
   let actorId: number | null = null;
   let firstRun = false;
+
+  /*
+    The admin count is the only part of this that can legitimately throw: with
+    no schema applied, the query fails and the operator needs to be told that
+    instead of a generic auth error. It is isolated here so the `catch` covers
+    exactly that.
+
+    `requireAdmin` is deliberately OUTSIDE the try. It redirects by throwing
+    `NEXT_REDIRECT`, and a bare `catch` swallows that — an unauthenticated seed
+    attempt would then return "System is not initialized" (misleading, and it
+    hides a broken login path) instead of sending the operator to /admin/login.
+  */
+  let adminCount: number;
   try {
-    const [{ value: adminCount }] = await db
-      .select({ value: count() })
-      .from(admins);
-    if (adminCount > 0) {
-      const context = await requireAdmin();
-      actorId = context.admin.id;
-    } else {
-      firstRun = true;
-    }
+    const [{ value }] = await db.select({ value: count() }).from(admins);
+    adminCount = value;
   } catch {
     return { status: "error", message: "System is not initialized. Apply the database schema first." };
+  }
+
+  if (adminCount > 0) {
+    const context = await requireAdmin();
+    actorId = context.admin.id;
+  } else {
+    firstRun = true;
   }
 
   if (firstRun && !seedTokenOk(formData)) {

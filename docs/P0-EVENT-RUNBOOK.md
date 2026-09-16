@@ -193,8 +193,11 @@ output, because an operator console is a shoulder-surfed surface in a room full 
 
 ### 7a. Rotate so the exposed values stop working
 
-The exposed set is the Supabase **service-role key**, the **JWT secret**, the
-**`postgres` database password**, and the pattern `sujith@201207`.
+The exposed set is the Supabase **service-role key**, the **JWT secret**, and
+the **`postgres` database password** — including the personal-pattern value this
+file printed in an earlier revision. That literal is gone now, but anything that
+has ever appeared in a tracked file must be treated as compromised regardless:
+rotate, do not delete-and-hope.
 
 * **Service-role key + JWT secret — the app never reads them.** Verified by search:
   nothing under `src/` references `SUPABASE_*` except our own TLS trust module, which
@@ -214,11 +217,14 @@ The exposed set is the Supabase **service-role key**, the **JWT secret**, the
   fails auth, which is the point of rotating: the old credential stops working.
 * Update **both** `DATABASE_POSTGRES_URL` (pooled) and `DATABASE_POSTGRES_URL_NON_POOLING`
   (direct), or a future code path that reads the other name breaks at the worst moment.
-* `ADMIN201207` is kept deliberately, per your decision.
+* The operator passphrase this file previously printed is removed, and the
+  earlier decision to keep it is reversed. A passphrase that has appeared in a
+  tracked file is burned — choose a fresh one (10+ characters) and re-seed the
+  operator account, or set the hash directly in the database.
 
 ### 7b. Pooling
 
-* Code side is done here: pool `max` **10 → 3**, plus `connectionTimeoutMillis: 10s` so
+* Code side is done here: pool `max` **10 → 2**, plus `connectionTimeoutMillis: 10s` so
   a starved request fails honestly (and `/api/health` says `db: "down"`) instead of
   hanging until the platform kills the function. On serverless, each concurrent
   instance opens its own pool, so 10 × the instances 60 units can summon at submit-time

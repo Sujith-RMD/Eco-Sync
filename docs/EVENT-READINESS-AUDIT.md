@@ -2,6 +2,18 @@
 
 Audit date: 2026-09-14 · HEAD `9eccb87` · 117 tracked files · Next.js 16.2.6 / React 19.2.6
 
+> **SUPERSESSION NOTICE (post-audit).** This report was written at HEAD `9eccb87`,
+> when Round 1 carried 7 links and the roster held 60 team accounts. Since then the
+> catalogue grew to **10 Round 1 links**, the roster to **61 teams**, and the scoring
+> constants were retuned: points are now tiered 75 / 100 / 125 with a 150-point case
+> code, hints cost 50, the first two wrong answers per puzzle are penalty-free and
+> each subsequent one is −25 to the −50 cap, and the Round 1 ceiling is **1055**, not
+> 830. The suspect roster was also replaced (now **4** subjects). The findings and
+> reasoning below remain the record of that audit; only the specific counts drifted.
+> Current truth lives in `src/server/game/catalogue.ts`, `constants.ts` and
+> `README.md`, and `scripts/smoke.ts` re-derives its expectations from those at run
+> time instead of hardcoding them.
+
 Every claim below is labelled **CONFIRMED** (I ran it or read it), **LIKELY**, **POSSIBLE**, or
 **UNKNOWN / NEEDS VERIFICATION**. Where I was unable to verify, I say exactly what to check.
 
@@ -19,7 +31,7 @@ I expected to be broken are not. The blocker is narrower and more mundane than "
 The local `.env` points at `127.0.0.1:5432/app_db`. Production runs on Supabase. `drizzle.config.ts`
 reads that same local `DATABASE_URL`, and there is no `migrations/` directory. So the schema and the
 puzzle content that the live event will actually serve are **unverified**, and the rehearsal you ran
-this morning (60 teams, fully armed, both rounds PENDING, 180 audit rows) proves the *local* database
+this morning (61 teams, fully armed, both rounds PENDING, 180 audit rows) proves the *local* database
 is correct — which is not the same database.
 
 Everything else on the P0/P1 list is a small number of real defects with concrete fixes, plus three
@@ -46,7 +58,7 @@ This section is the record of what changed and how each change was verified. Eve
 | **P1-3** | `src/app/error.tsx` (branded, retryable, prints the digest but never the error) and `src/app/global-error.tsx` (self-contained, inline styles, its own `<html>`). | Planted a route that throws; the RSC payload registers both as the segment's boundaries (`"error":"$1d"`, `boundary:error`, `boundary:global-error`) and their copy is present in the client chunks the browser is served. |
 | **P1-4** | `src/app/team/loading.tsx` — one file covering all six participant routes, since `loading.tsx` applies to its segment and everything beneath it. | Present in the production server output (`.next/server/chunks/ssr/…`). |
 | **P2-1** | `import "server-only"` added to `catalogue.ts`. `UNARMED_SENTINEL` moved to `unarmed.ts` (the guard-free side) so the pure content rule stays testable; `vitest.config.ts` aliases `server-only` to the package's own `react-server` build. | **Proved, not assumed:** planted a `"use client"` page importing the catalogue — `next build` failed with the exact trace `[Client Component Browser] → src/server/game/catalogue.ts`, while the legitimate Server Component traces still resolved. |
-| **P4-2** | `isUnarmedAnswer("")` now returns `true`; the contradicting test assertion was flipped deliberately. | 77/77 unit tests pass. |
+| **P4-2** | `isUnarmedAnswer("")` now returns `true`; the contradicting test assertion was flipped deliberately. | 80/80 unit tests pass. |
 | **P4-3** | `unlockPuzzleForTeam` (engine) + `unlockPuzzleForTeamAction` (server action) + `TeamRepairPanel` on the unit file. Writes a `MANUAL_ADJUSTMENT` ledger row at `delta: 0` and an audit row; never downgrades a `SOLVED` link and never touches another unit. | Run against the live local database: opened S5 for UNIT-01 only, created exactly one progress row, wrote the ledger and audit rows, returned `ALREADY_OPEN` on a second press with no state change, then restored the database to its exact prior counts (`progress 0 / events 0 / audits 180`). |
 
 **Still open**
@@ -163,7 +175,7 @@ submit button as a child component to avoid the trap.
   ended. `qualifyTop15Action` (`src/server/admin/actions.ts:174`) gates only on the word `CONFIRM`.
   The UI label reads "Rank Round 01 · mark top 15 · rebuild Round 02 roster. **Idempotent**"
   (`admin-controls.tsx`), which invites casual pressing.
-- **Why it matters.** Press it while Round 01 is live and the round ends instantly for all 60 teams,
+- **Why it matters.** Press it while Round 01 is live and the round ends instantly for all 61 teams,
   standings frozen mid-round, and Round 02's roster built from partial data. Because it is described
   as idempotent, an operator may press it twice.
 - **Second-order hazard (this is the one already recorded in project notes):** it does
@@ -421,7 +433,7 @@ submit button as a child component to avoid the trap.
   `qualifyTop15Action`, `restartEventAction`, `purgeEventAction`. There is no per-team action at all.
 - **Why it matters.** If one team's chain breaks (a bad row, a mistyped answer the puzzle actually
   wants, a puzzle edited after the round opened), the operator's only tools are global and
-  destructive: RESTART wipes all 60 teams, PURGE wipes the event. There is no "unlock S5 for UNIT-23",
+  destructive: RESTART wipes all 61 teams, PURGE wipes the event. There is no "unlock S5 for UNIT-23",
   no "add 20 points to UNIT-07", no "reset this team's lockout".
 - **Exact fix.** Add one audited admin action — `unlockPuzzleForTeamAction(teamId, puzzleCode)` —
   writing a `MANUAL_ADJUSTMENT` score event and an `audit_logs` row. This is the highest-value
@@ -445,19 +457,21 @@ submit button as a child component to avoid the trap.
 
 ### P4-5. What is correct and verified in the chain (do not change)
 
-**Confidence: CONFIRMED**
+**Confidence: CONFIRMED** — counts re-verified after the Round 1 expansion to 10 links.
 
-- Round 1: 7 links, `orderIndex` contiguous 1–7, all `DIGITAL`, `P1–P6` = 100 pts, `P7` = 150 pts,
-  sum 750. Round 2: 8 links, contiguous 1–8, `LAST` is `orderIndex 8`, kind `FINAL_CODE`, 150 pts.
+- Round 1: **10 links**, `orderIndex` contiguous 1–10, all `DIGITAL`, points tiered by
+  difficulty (75 easy / 100 medium / 125 hard) with `P10` the 150-point case code,
+  sum **975**. Round 2: 8 links, contiguous 1–8, `LAST` is `orderIndex 8`, kind
+  `FINAL_CODE`, 150 pts.
 - **Zero** unarmed answers, **zero** empty answers, **zero** duplicate answers within or across
   rounds, **zero** empty hint strings, **zero** missing briefings, all codes unique.
 - Every answer is already in normalized form (NFKC + trim + uppercase) — the round-trip is stable.
-- `round1.puzzleCount = 7` matches the catalogue; `round2.puzzleCount = 8` matches.
-- Achievable Round 1 maximum = 750 + (40 × 2) = **830**, exactly equal to
+- `round1.puzzleCount = 10` matches the catalogue; `round2.puzzleCount = 8` matches.
+- Achievable Round 1 maximum = 975 + (40 × 2) = **1055**, exactly equal to
   `GAME_CONSTANTS.scoring.maxRound1Score`. The scoring constants are internally consistent.
-- 6 suspects, no duplicate codes or names, and `CORRECT_SUSPECT_CODE` is present in `SUSPECTS`.
-- **The `S2` code gap is intentional and documented** — `db/identify-content-revision.sql:10` lists
-  `S2` among the RETIRED rows, and `README.md:43` states the play order as
+- 4 suspects, no duplicate codes or names, and `CORRECT_SUSPECT_CODE` is present in `SUSPECTS`.
+- **The `S2` code gap is intentional and documented** — `db/identify-content-revision.sql` lists
+  `S2` among the RETIRED rows, and `README.md` states the Round 2 play order as
   `S1 → S3 → S4 → S5 → S6 → S7 → S8`. Not a defect. I nearly reported it as one.
 
 ---

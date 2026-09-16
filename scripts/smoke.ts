@@ -44,6 +44,7 @@ import {
 import { ROUND1_PUZZLES, ROUND2_PUZZLES } from "@/server/game/catalogue";
 import { GAME_CONSTANTS } from "@/server/game/constants";
 import { isUnarmedAnswer } from "@/server/game/unarmed";
+import { timeBonusPoints } from "@/server/game/rules";
 
 let passed = 0;
 let failed = 0;
@@ -90,6 +91,25 @@ async function scoreFor(teamId: number, roundCode: string): Promise<number> {
         where se.team_id = ${teamId} and r.code = ${roundCode}`,
   );
   return Number((result.rows[0] as { total: number }).total);
+}
+
+/**
+ * The seconds the engine itself banked at finish — stored on the participation
+ * row and the exact input `timeBonusPoints` was called with, so the expected
+ * score below is derived rather than guessed.
+ */
+async function remainingSecondsAtFinish(
+  teamId: number,
+  roundCode: string,
+): Promise<number> {
+  const result = await db.execute(
+    sql`select rp.remaining_seconds_at_finish as remaining
+        from round_participations rp
+        join rounds r on r.id = rp.round_id
+        where rp.team_id = ${teamId} and r.code = ${roundCode}`,
+  );
+  const row = (result.rows[0] ?? null) as { remaining: number | null } | null;
+  return row?.remaining ?? 0;
 }
 
 async function main() {
@@ -155,10 +175,16 @@ async function main() {
   expect(start1.ok, "round 01 starts (official clock armed)");
 
   const hint = await claimHint({ teamId: t1.id, roundCode: "ROUND_1", puzzleCode: "P1" });
-  expect(hint.ok && typeof hint.hint === "string", "hint issued with −30 penalty");
+  expect(hint.ok && typeof hint.hint === "string", `hint issued with −${GAME_CONSTANTS.scoring.hintPenalty} penalty`);
 
   const wrong = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_1", puzzleCode: "P1", rawAnswer: "definitely-wrong" });
-  expect(wrong.outcome === "WRONG" && wrong.deduction === 10, "wrong answer: −10 recorded");
+  // The first two wrong attempts per puzzle are penalty-free (rules.ts grace
+  // period); the deduction only starts on the third. The lockout engages
+  // regardless — that is what the next assertion relies on.
+  expect(
+    wrong.outcome === "WRONG" && wrong.deduction === 0,
+    "first wrong answer is penalty-free (grace period); lockout still engages",
+  );
 
   const duringLockout = await submitAnswer({ teamId: t1.id, roundCode: "ROUND_1", puzzleCode: "P1", rawAnswer: "NIGHTOWL" });
   expect(duringLockout.outcome === "LOCKOUT", "lockout blocks resubmission (server-enforced)");
@@ -187,15 +213,25 @@ async function main() {
   // unchanged through a Round 1 that grew from 7 links to 10, so the assertion
   // went on passing while describing a round that no longer existed.
   const solvedPoints = ROUND1_PUZZLES.reduce((sum, puzzle) => sum + puzzle.points, 0);
-  const deductions =
-    GAME_CONSTANTS.scoring.hintPenalty + GAME_CONSTANTS.scoring.wrongAnswerPenalty;
+  // This run claimed exactly one hint and made exactly one wrong answer, and
+  // the first wrong answer is penalty-free under the grace period — so the
+  // only deduction actually applied is the hint. Equating the observed score
+  // to what the ledger must hold (rather than a band calibrated to retired
+  // constants) keeps this honest when either constant moves again.
+  const remaining = await remainingSecondsAtFinish(t1.id, "ROUND_1");
+  const expectedBonus = timeBonusPoints(
+    remaining,
+    GAME_CONSTANTS.scoring.timeBonusPerFullMinute,
+  );
+  const expectedScore =
+    solvedPoints - GAME_CONSTANTS.scoring.hintPenalty + expectedBonus;
   expect(
-    scoreAfterR1 > solvedPoints - deductions,
-    `score includes time bonus (got ${scoreAfterR1})`,
+    scoreAfterR1 === expectedScore,
+    `score is exactly solved points − hint penalty + time bonus (got ${scoreAfterR1}, expected ${expectedScore})`,
   );
   expect(
-    scoreAfterR1 <= GAME_CONSTANTS.scoring.maxRound1Score - deductions,
-    `score beneath ceiling (got ${scoreAfterR1})`,
+    scoreAfterR1 <= GAME_CONSTANTS.scoring.maxRound1Score,
+    `score beneath the configured ceiling (got ${scoreAfterR1}, ceiling ${GAME_CONSTANTS.scoring.maxRound1Score})`,
   );
 
   // timer expiry enforcement
@@ -258,9 +294,9 @@ async function main() {
     "culprit vote unseals only after the final code",
   );
 
-  const vote = await castVote({ teamId: t1.id, suspectCode: "ROHAN_MEHTA" });
+  const vote = await castVote({ teamId: t1.id, suspectCode: "ROHAN_DAS" });
   expect(vote.outcome === "SEALED", "vote sealed");
-  const dupVote = await castVote({ teamId: t1.id, suspectCode: "ROHAN_MEHTA" });
+  const dupVote = await castVote({ teamId: t1.id, suspectCode: "ROHAN_DAS" });
   expect(dupVote.outcome === "DUPLICATE", "duplicate vote rejected");
   const badSuspect = await castVote({ teamId: t1.id, suspectCode: "NOBODY" });
   expect(["INVALID_SUSPECT", "DUPLICATE"].includes(badSuspect.outcome), "invalid suspect rejected");

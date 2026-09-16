@@ -16,6 +16,18 @@ out/
 # generated one-time event credentials (never commit)
 credentials/
 
+# answer-bearing content SQL — derived from src/server/game/catalogue.ts by
+# scripts/apply-round1-content.ts and scripts/apply-roster.ts (--emit-sql), or
+# hand-authored for Round 2. Every puzzle answer and one access-code hash lives
+# in these files, so they stay local: regenerate with the --emit-sql scripts.
+# catalogue.ts is the canonical source and is protected by `server-only` at
+# build time; these copies had no such guard.
+db/round-1-content.sql
+db/round-2-content.sql
+db/verify-round-2.sql
+db/arm-s7.sql
+db/roster-rename.sql
+
 # scratch files and hand-pasted endpoints (never commit)
 .tmp-*
 tmp-*

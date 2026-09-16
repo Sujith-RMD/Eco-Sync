@@ -214,29 +214,6 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* External reveals — handed over only once the link is broken                  */
-/* -------------------------------------------------------------------------- */
-
-export interface PuzzleReveal {
-  /** Button label shown on solve. */
-  label: string;
-  /** External URL opened in a new tab. */
-  url: string;
-  /** Confirmation shown once the player has opened it and come back. */
-  complete: string;
-}
-
-/**
- * A puzzle may hand the player an external link once it is solved. This lives
- * here rather than in a component because the URL *contains the answer* —
- * `t179PiWXDnA` is the video id — so a constant in the client bundle would let
- * a team read the answer straight out of the page source. `engine.ts` attaches
- * it to the snapshot only when that puzzle's status is SOLVED.
- */
-export const PUZZLE_REVEALS: Record<string, PuzzleReveal> = {
-};
-
-/* -------------------------------------------------------------------------- */
 /* ROUND 2 — supplied questions only, in play order:                            */
 /* S1 → S3 → S4 → S5 → S6 → S7 → S8 → LAST → vote                              */
 /* -------------------------------------------------------------------------- */
@@ -411,12 +388,10 @@ export interface SuspectEntry {
 }
 
 export const SUSPECTS: SuspectEntry[] = [
-  { code: "VIKRAM_SHETTY", name: "VIKRAM SHETTY", role: "Facilities contractor" },
-  { code: "ROHAN_MEHTA", name: "ROHAN MEHTA", role: "Presenter — 02:15 slot" },
-  { code: "ANANYA_IYER", name: "ANANYA IYER", role: "Library archivist" },
-  { code: "ARJUN_PILLAI", name: "ARJUN PILLAI", role: "AV & projector operator" },
-  { code: "MEERA_KULKARNI", name: "MEERA KULKARNI", role: "ECO-SYNC data analyst" },
-  { code: "KABIR_MALHOTRA", name: "KABIR MALHOTRA", role: "Night security lead" },
+  { code: "VIKRAM_SHETTY", name: "VIKRAM SHETTY", role: "Facilities Manager" },
+  { code: "MEERA_IYER", name: "MEERA IYER", role: "Internal Auditor" },
+  { code: "ROHAN_DAS", name: "ROHAN DAS", role: "Lead Developer, ECO-SYNC" },
+  { code: "KAVYA_NAIR", name: "KAVYA NAIR", role: "Library Night Supervisor" },
 ];
 
 /** [SERVER-ONLY] The culprit identified by the supplied game material. */
