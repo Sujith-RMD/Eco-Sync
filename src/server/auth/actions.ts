@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { admins, teams } from "@/db/schema";
 import { DUMMY_PASSWORD_HASH, verifyPassword } from "@/lib/auth/password";
-import { createSession, destroySession, getSessionView } from "@/lib/auth/session";
+import { createSession, destroySession, destroySessionsForTeam, getSessionView } from "@/lib/auth/session";
 import {
   guardAdminSignIn,
   guardTeamSignIn,
@@ -113,6 +113,8 @@ export async function loginTeam(
     ip,
   });
 
+  // Invalidate any existing session for this team (single-session-per-team).
+  await destroySessionsForTeam(team.id);
   await createSession({ subject: "TEAM", teamId: team.id, ip, userAgent });
   // This team is proven; drop its typo history so it starts the round clean.
   await noteTeamSignInSuccess(teamName);

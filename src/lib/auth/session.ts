@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions } from "@/db/schema";
 import type { SessionView } from "@/types/auth";
@@ -91,6 +91,13 @@ export async function getSessionView(): Promise<SessionView | null> {
       ? { id: record.admin.id, username: record.admin.username }
       : undefined,
   };
+}
+
+/** Destroys all active sessions for a given team, enforcing single-session-per-team. */
+export async function destroySessionsForTeam(teamId: number): Promise<void> {
+  await db.delete(sessions).where(
+    sql`${sessions.subject} = 'TEAM' AND ${sessions.teamId} = ${teamId}`,
+  );
 }
 
 /** Destroys the session row and clears the cookie. */
