@@ -23,9 +23,8 @@ export const GAME_CONSTANTS = {
   round2: {
     code: "ROUND_2" as const,
     durationMinutes: 60,
-    /** Display total for standings and team views. The chain itself is the
-     *  database's; this is only the denominator printed next to it. */
-    puzzleCount: 8,
+    /** Visible chain puzzles: S1, S2, S3, S4, S5, S6 and LAST. */
+    puzzleCount: 7,
     winningTeams: 3,
   },
   scoring: {

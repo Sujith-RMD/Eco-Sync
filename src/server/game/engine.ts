@@ -371,6 +371,7 @@ export async function getTeamRoundSnapshot(
 export type SubmitOutcome =
   | "CORRECT"
   | "WRONG"
+  | "MULTI_ANSWER_REQUIRED"
   | "LOCKOUT"
   | "LOCKED_PUZZLE"
   | "ALREADY_SOLVED"
@@ -435,6 +436,12 @@ export async function submitAnswer(input: {
     where: and(eq(puzzles.roundId, round.id), eq(puzzles.code, input.puzzleCode)),
   });
   if (!puzzle) return { outcome: "PUZZLE_UNKNOWN", message: "Unknown puzzle reference." };
+  if (getMultiAnswerGroup(puzzle.code)) {
+    return {
+      outcome: "MULTI_ANSWER_REQUIRED",
+      message: "This puzzle requires all answers in the group to be submitted together.",
+    };
+  }
 
   const roundPuzzles = await db
     .select({
@@ -1341,15 +1348,22 @@ export async function publicLeaderboard(roundCode: RoundCode): Promise<{
     .where(eq(scoreEvents.roundId, round.id))
     .groupBy(scoreEvents.teamId);
 
-  const progressAgg = await db
+  const progressRows = await db
     .select({
       teamId: teamPuzzleProgress.teamId,
-      solved: sql<number>`count(*) filter (where ${teamPuzzleProgress.status} = 'SOLVED')::int`.mapWith(Number),
+      code: puzzles.code,
+      status: teamPuzzleProgress.status,
     })
     .from(teamPuzzleProgress)
     .innerJoin(puzzles, eq(puzzles.id, teamPuzzleProgress.puzzleId))
     .where(eq(puzzles.roundId, round.id))
-    .groupBy(teamPuzzleProgress.teamId);
+    ;
+  const solvedByTeam = new Map<number, number>();
+  for (const progress of progressRows) {
+    if (progress.status === "SOLVED" && !isMultiAnswerGroupMember(progress.code)) {
+      solvedByTeam.set(progress.teamId, (solvedByTeam.get(progress.teamId) ?? 0) + 1);
+    }
+  }
 
   const votes = await db.select({ teamId: culpritVotes.teamId }).from(culpritVotes);
 
@@ -1359,7 +1373,7 @@ export async function publicLeaderboard(roundCode: RoundCode): Promise<{
       name: p.name,
       finishedAt: p.finishedAt,
       score: scores.find((s) => s.teamId === p.teamId)?.total ?? 0,
-      solvedCount: progressAgg.find((s) => s.teamId === p.teamId)?.solved ?? 0,
+      solvedCount: solvedByTeam.get(p.teamId) ?? 0,
       voted: votes.some((v) => v.teamId === p.teamId),
     })),
   );
@@ -1767,7 +1781,8 @@ export async function adminTeamsOverview(): Promise<AdminTeamOverviewRow[]> {
       coalesce((select count(*) from team_puzzle_progress pp2
                 join puzzles p3 on p3.id = pp2.puzzle_id
                 where pp2.team_id = t.id and pp2.status = 'SOLVED'
-                  and p3.round_id in (select id from r2)), 0)::int as solved_r2,
+                  and p3.round_id in (select id from r2)
+                  and p3.code not in ('S4a', 'S4b', 'S5a', 'S5b')), 0)::int as solved_r2,
       exists(select 1 from culprit_votes cv where cv.team_id = t.id) as voted
     from teams t
     order by t.name
