@@ -49,8 +49,8 @@ function snapshot(overrides: Partial<RoundSnapshot> = {}): RoundSnapshot {
       code: "ROUND_1",
       status: "ACTIVE",
       startedAt: "2026-02-14T09:00:00.000Z",
-      endsAt: "2026-02-14T09:40:00.000Z",
-      durationMinutes: 40,
+      endsAt: "2026-02-14T09:45:00.000Z",
+      durationMinutes: 45,
       serverTime: "2026-02-14T09:10:00.000Z",
       remainingSeconds: 1800,
     },
@@ -198,7 +198,7 @@ describe("buildStoryline", () => {
       snapshot({ round: { ...snapshot().round, status: "ENDED" } }),
     );
     expect(kinds(closed.beats)).toContain("ROUND_ENDED");
-    expect(closed.beats.at(-1)?.at).toBe("2026-02-14T09:40:00.000Z");
+    expect(closed.beats.at(-1)?.at).toBe("2026-02-14T09:45:00.000Z");
 
     // No endsAt means no invented timestamp.
     const vague = buildStoryline(

@@ -53,7 +53,7 @@ export interface PuzzleSeed {
 }
 
 /* -------------------------------------------------------------------------- */
-/* ROUND 1 — 10 sequential puzzles (P1→P10), 40 minutes                        */
+/* ROUND 1 — 10 sequential puzzles (P1→P10), 45 minutes                        */
 /* -------------------------------------------------------------------------- */
 
 export const ROUND1_PUZZLES: PuzzleSeed[] = [

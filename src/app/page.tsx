@@ -11,8 +11,8 @@ import { buttonClasses } from "@/components/ui/button";
 */
 const PARAMETERS = [
   { label: "Field", value: "61", sub: "teams deployed" },
-  { label: "Round 01", value: "40:00", sub: "top 15 advance" },
-  { label: "Round 02", value: "75:00", sub: "3 teams prevail" },
+  { label: "Round 01", value: "45:00", sub: "top 15 advance" },
+  { label: "Round 02", value: "60:00", sub: "3 teams prevail" },
   { label: "Verdict", value: "Sealed", sub: "culprit vote" },
 ] as const;
 
