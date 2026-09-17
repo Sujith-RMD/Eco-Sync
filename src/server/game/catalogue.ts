@@ -272,8 +272,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     title: "THE FOUR WALLS",
     briefing:
       "Four physical sheets were recovered from the investigation room. Together, they form a cipher key.\n" +
-      "Use the four sheets to decode the recovered transmission and reverse it.\n" +
-      "Hint: puzzle is outside the room in corridor.",
+      "Use the four sheets to decode the recovered transmission and reverse it.",
     answer: "SUSTAINABILITY",
     hints: [
       "Use the four physical sheets as the cipher key, then decode the transmission. Once decoded, read the recovered text from the other end.",
@@ -291,7 +290,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
       "First presentation starts at 1:00 AM.\n\n" +
       "Each team gets 12 minutes, plus 3 minutes to change over.\n\n" +
       "Presenting order: Team Byte, Team Loop, Team Kernel, Team Pixel, Team Stack, Team NightOwl (R. Das), Team Null.\n\n" +
-      "When did Rohan's presentation begin? (HHMM)",
+      "When did Rohan's presentation begin? (HHMM, no colon)",
     answer: "0215",
     hints: [],
     points: 100,

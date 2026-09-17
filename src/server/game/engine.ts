@@ -33,6 +33,7 @@ import {
 import {
   getMultiAnswerGroup,
   getMultiAnswerGroupByAnchor,
+  isMultiAnswerGroupMember,
 } from "@/lib/game/newspaper-group";
 import { auditRoundAnswers } from "@/server/game/content-guard";
 import { describeUnarmed } from "@/server/game/unarmed";
@@ -161,6 +162,9 @@ export async function getTeamRoundSnapshot(
     .orderBy(asc(puzzles.orderIndex));
 
   const puzzleIds = roundPuzzles.map((p) => p.id);
+  const chainPuzzles = roundPuzzles.filter(
+    (p) => !isMultiAnswerGroupMember(p.code),
+  );
 
   const progressRows =
     puzzleIds.length === 0
@@ -252,7 +256,7 @@ export async function getTeamRoundSnapshot(
       .filter((text): text is string => typeof text === "string");
 
     let isCurrent = false;
-    if (status === "UNLOCKED" && !currentAssigned) {
+    if (!isMultiAnswerGroupMember(p.code) && status === "UNLOCKED" && !currentAssigned) {
       isCurrent = true;
       currentAssigned = true;
     }
@@ -324,7 +328,10 @@ export async function getTeamRoundSnapshot(
     return snapshot;
   });
 
-  const solvedCount = puzzleSnapshots.filter((p) => p.status === "SOLVED").length;
+  const solvedCount = chainPuzzles.filter((p) => {
+    const progress = progressRows.find((row) => row.puzzleId === p.id);
+    return progress?.status === "SOLVED";
+  }).length;
   const current = puzzleSnapshots.find((p) => p.isCurrent) ?? null;
 
   const snapshot: RoundSnapshot = {
@@ -332,7 +339,7 @@ export async function getTeamRoundSnapshot(
     round: roundInfo,
     score: total,
     solvedCount,
-    totalCount: roundPuzzles.length,
+    totalCount: chainPuzzles.length,
     puzzles: puzzleSnapshots,
     currentPuzzleCode: current?.code ?? null,
     finished: participation?.finishedAt != null,

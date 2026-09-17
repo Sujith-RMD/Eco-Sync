@@ -164,6 +164,7 @@ function MultiAnswerForm({
       return p?.status === "SOLVED";
     }),
   );
+  const groupComplete = solvedCodes.size === group.codes.length;
 
   return (
     <div className="space-y-4">
@@ -213,7 +214,7 @@ function MultiAnswerForm({
             );
           })}
         </div>
-        <SubmitButton disabled={roundEnded || locked} />
+        <SubmitButton disabled={roundEnded || locked || groupComplete} />
       </form>
 
       {state.message ? (
