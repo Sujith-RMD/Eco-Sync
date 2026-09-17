@@ -212,8 +212,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     kind: "DIGITAL",
     title: "THE CASE CODE",
     briefing:
-      "Build the case code. Each tag is Puzzle number, then letter position.\n" +
-      "6-3 · 5-2 · 5-7 · 1-2 · 1-5 · 1-6 · 6-5",
+      "Build the case code. Each pair is Puzzle number, then letter position.\n" +
+      "Look where every announcement begins, something else has been left behind.",
     answer: "TRAITOR",
     hints: [
       "Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
