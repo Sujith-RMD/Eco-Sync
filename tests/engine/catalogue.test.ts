@@ -93,6 +93,7 @@ describe("Round 2 catalogue", () => {
   it("contains the supplied questions in play order", () => {
     expect(ROUND2_PUZZLES.map((p) => p.code)).toEqual([
       "S1",
+      "S2",
       "S3",
       "S4",
       "S5",
@@ -130,6 +131,7 @@ describe("Round 2 catalogue", () => {
   it("matches the answer shapes pinned by the supplied documents", () => {
     const byCode = new Map(ROUND2_PUZZLES.map((p) => [p.code, p]));
     expect(normalizeAnswer(byCode.get("S1")!.answer)).toMatch(/^[A-Z]{6}$/);
+    expect(normalizeAnswer(byCode.get("S2")!.answer)).toMatch(/^[A-Z]{12,}$/);
     // The two HHMM clock answers.
     for (const code of ["S3", "S8"]) {
       expect(normalizeAnswer(byCode.get(code)!.answer)).toMatch(/^\d{4}$/);

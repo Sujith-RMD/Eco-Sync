@@ -252,17 +252,45 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     code: "S1",
     orderIndex: 1,
     kind: "DIGITAL",
-    title: "The Crumpled Draft",
+    title: "THE AUDIT NOTE",
     briefing:
-      "The culprit threw away a draft somewhere in this room.\n" +
-      "What did they do to the figures?",
+      "Figures for this quarter are looking excellent.\n" +
+      "Usage of water is down almost 30 percent.\n" +
+      "Don't worry about the audit, it's routine.\n" +
+      "Green Campus rating should be ours this year.\n" +
+      "Everything in ECO-SYNC is under control.\n" +
+      "Destroy this note after reading.\n\n" +
+      "What is hidden in the note?",
     answer: "FUDGED",
-    hints: [],
+    hints: [
+      "Look closely at how each line begins. The first letters reveal the answer.",
+    ],
     points: 100,
+    answerPlaceholder: "ENTER ONE WORD",
+  },
+  {
+    code: "S2",
+    orderIndex: 2,
+    kind: "DIGITAL",
+    title: "THE FOUR WALLS",
+    briefing:
+      "Four physical sheets were recovered from the investigation room. Together, they form a cipher key.\n" +
+      "\n" +
+      "Use the four sheets to decode the recovered transmission:\n" +
+      "\n" +
+      "YTILIBANIATSUS\n" +
+      "\n" +
+      "What is the hidden word?",
+    answer: "SUSTAINABILITY",
+    hints: [
+      "Use the four physical sheets as the cipher key, then decode the transmission. Once decoded, read the recovered text from the other end.",
+    ],
+    points: 100,
+    answerPlaceholder: "ENTER ONE WORD",
   },
   {
     code: "S3",
-    orderIndex: 2,
+    orderIndex: 3,
     kind: "DIGITAL",
     title: "The Judging Schedule",
     briefing: "When did Rohan's presentation begin?",
@@ -272,7 +300,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S4",
-    orderIndex: 3,
+    orderIndex: 4,
     kind: "DIGITAL",
     title: "Newspaper Evidence",
     briefing:
@@ -283,7 +311,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S5",
-    orderIndex: 4,
+    orderIndex: 5,
     kind: "DIGITAL",
     title: "Newspaper Evidence",
     briefing:
@@ -294,7 +322,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S6",
-    orderIndex: 5,
+    orderIndex: 6,
     kind: "DIGITAL",
     title: "Newspaper Evidence",
     briefing:
@@ -305,7 +333,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S7",
-    orderIndex: 6,
+    orderIndex: 7,
     kind: "DIGITAL",
     title: "Newspaper Evidence",
     briefing:
@@ -319,7 +347,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S8",
-    orderIndex: 7,
+    orderIndex: 8,
     kind: "DIGITAL",
     title: "The Gate Log",
     briefing:
@@ -331,7 +359,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: FINAL_CODE_PUZZLE_CODE,
-    orderIndex: 8,
+    orderIndex: 9,
     kind: "FINAL_CODE",
     title: "Outdoor Backup",
     briefing:
