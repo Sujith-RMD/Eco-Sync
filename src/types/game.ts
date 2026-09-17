@@ -50,6 +50,26 @@ export interface PuzzleSnapshot {
    * input, so the component never has to branch on null.
    */
   answerInput: AnswerInputView;
+  /** The team's submitted answer for this puzzle, if solved. Null if unsolved. */
+  submittedAnswer?: string | null;
+  /**
+   * Newspaper group data. When present, this puzzle is part of a multi-answer
+   * group presented as a single question. The UI renders multiple answer fields.
+   */
+  newspaperGroup?: {
+    /** All puzzle codes in the group, in display order. */
+    codes: string[];
+    /** Generic prompt shown instead of individual briefings. */
+    prompt: string;
+    /** Per-field labels. */
+    fieldLabels: string[];
+    /** How many answers in the group have been solved by this team. */
+    solvedCount: number;
+    /** Total answers in the group. */
+    totalCount: number;
+    /** The team's submitted answers for each field (null if not yet solved). */
+    submittedAnswers: (string | null)[];
+  };
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   Gavel,
   KeyRound,
   Lightbulb,
+  ListChecks,
   Loader2,
   Lock,
   MapPin,
@@ -37,6 +38,7 @@ import { AutoRefresh, LockoutBadge, ServerCountdown } from "@/components/game/ti
 import { InvestigationConsole } from "@/components/investigation/InvestigationConsole";
 import { CaseFile } from "@/components/investigation/CaseFile";
 import { GAME_CONSTANTS } from "@/server/game/constants";
+import { NEWSPAPER_GROUP } from "@/lib/game/newspaper-group";
 
 /* -------------------------------------------------------------------------- */
 /* Answer submission form (one per selected puzzle, keyed by code)             */
@@ -119,6 +121,116 @@ function AnswerForm({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Puz
           {state.message === "TRANSMISSION_RECEIVED"
             ? "Entry accepted. Open the transmission below to proceed."
             : state.message}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Multi-answer form (newspaper group: three answer fields, any order)          */
+/* -------------------------------------------------------------------------- */
+
+function MultiAnswerForm({
+  snapshot,
+  puzzle,
+}: {
+  snapshot: RoundSnapshot;
+  puzzle: PuzzleSnapshot;
+}) {
+  const router = useRouter();
+  const [state, formAction] = useActionState(submitAnswerAction, initialSubmitState);
+  const [lockoutRemaining, setLockoutRemaining] = useState(0);
+  const group = puzzle.newspaperGroup;
+
+  const effectiveLockout = state.lockoutUntil ?? puzzle.lockedUntil;
+  const roundDead = snapshot.round.remainingSeconds !== null && snapshot.round.remainingSeconds <= 0;
+  const roundEnded = snapshot.round.status !== "ACTIVE" || roundDead;
+  const locked = lockoutRemaining > 0;
+
+  useEffect(() => {
+    if (state.status !== "correct") return;
+    emitStorylineSignal("unlocked", { roundCode: snapshot.round.code });
+    router.refresh();
+  }, [state.status, snapshot.round.code, router]);
+
+  if (!group) return null;
+
+  // Determine which fields are already solved.
+  const solvedCodes = new Set(
+    group.codes.filter((code) => {
+      const p = snapshot.puzzles.find((pp) => pp.code === code);
+      return p?.status === "SOLVED";
+    }),
+  );
+
+  return (
+    <div className="space-y-4">
+      {effectiveLockout ? (
+        <LockoutBadge lockedUntil={effectiveLockout} onTick={setLockoutRemaining} />
+      ) : null}
+
+      <p className="font-mono text-[12px] leading-relaxed text-mist">
+        {group.prompt}
+      </p>
+
+      <div className="space-y-3">
+        {group.codes.map((code, index) => {
+          const isSolved = solvedCodes.has(code);
+          const p = snapshot.puzzles.find((pp) => pp.code === code);
+          return (
+            <div key={code} className="space-y-1.5">
+              <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+                {group.fieldLabels[index]}
+                {isSolved ? (
+                  <span className="ml-2 text-acid">— recovered</span>
+                ) : null}
+              </label>
+              {isSolved ? (
+                <div className="flex items-center gap-2 border border-acid/30 bg-acid/5 px-3.5 py-2.5 font-mono text-[12px] text-acid">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  Solv ed — answer recorded
+                </div>
+              ) : (
+                <form action={formAction} className="flex flex-col gap-3 sm:flex-row">
+                  <input type="hidden" name="roundCode" value={snapshot.round.code} />
+                  <input type="hidden" name="puzzleCode" value={code} />
+                  <TextInput
+                    name="answer"
+                    required
+                    maxLength={p?.answerInput.maxLength ?? 255}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    placeholder={p?.answerInput.placeholder ?? "ENTER ANSWER"}
+                    disabled={roundEnded || locked}
+                    className="flex-1 uppercase tracking-[0.2em]"
+                    aria-label={`Answer for ${group.fieldLabels[index]}`}
+                  />
+                  <SubmitButton disabled={roundEnded || locked} />
+                </form>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {state.message ? (
+        <div
+          role="status"
+          className={cn(
+            "flex items-start gap-2.5 border px-3.5 py-3 font-mono text-[12px] leading-relaxed",
+            state.status === "correct" && "border-confirm/40 bg-confirm/10 text-confirm",
+            state.status === "wrong" && "border-alert/40 bg-alert/10 text-alert",
+            state.status === "blocked" && "border-caution/40 bg-caution/10 text-caution",
+          )}
+        >
+          {state.status === "correct" ? (
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          )}
+          {state.message}
         </div>
       ) : null}
     </div>
@@ -216,12 +328,24 @@ function HintRequest({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: Pu
 /* -------------------------------------------------------------------------- */
 
 function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: PuzzleSnapshot }) {
+  const group = puzzle.newspaperGroup;
+  const isGroupAnchor = Boolean(group);
+
   return (
     <Panel
-      title={`${puzzle.code} // ${puzzle.title}`}
+      title={
+        isGroupAnchor
+          ? "Newspaper Evidence"
+          : `${puzzle.code} // ${puzzle.title}`
+      }
       aside={
         <div className="flex max-w-full flex-wrap items-center gap-2">
-          {puzzle.kind !== "DIGITAL" ? (
+          {group ? (
+            <StatusPill
+              tone={group.solvedCount === group.totalCount ? "ok" : "warn"}
+              label={`${group.solvedCount}/${group.totalCount} recovered`}
+            />
+          ) : puzzle.kind !== "DIGITAL" ? (
             <StatusPill
               tone={puzzle.kind === "FINAL_CODE" ? "warn" : "muted"}
               label={puzzle.kind === "FINAL_CODE" ? "final code" : "checkpoint"}
@@ -247,6 +371,11 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
             SEALED — this puzzle unseals only when the preceding link in the
             chain is broken. Briefings never transmit early.
           </p>
+        ) : group ? (
+          <BriefingText
+            briefing={group.prompt}
+            className="text-sm leading-relaxed text-mist"
+          />
         ) : (
           <BriefingText
             briefing={puzzle.briefing ?? ""}
@@ -254,12 +383,22 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
           />
         )}
 
-        {puzzle.status === "SOLVED" ? (
+        {puzzle.status === "SOLVED" && !group ? (
           <div className="space-y-2 border border-acid/30 bg-acid/5 px-4 py-3.5">
             <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.2em] text-acid">
               <CheckCircle2 className="h-4 w-4" />
-              Puzzle solved
+              Solved
             </p>
+            {puzzle.submittedAnswer ? (
+              <div className="space-y-1">
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+                  Your submitted answer
+                </p>
+                <p className="font-mono text-sm font-semibold tracking-[0.12em] text-ink">
+                  {puzzle.submittedAnswer}
+                </p>
+              </div>
+            ) : null}
             <p className="font-mono text-[11px] leading-relaxed text-dim">
               {puzzle.solvedAt
                 ? `Logged ${toEventStamp(puzzle.solvedAt)} IST. `
@@ -280,20 +419,57 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
           </div>
         ) : null}
 
-        {puzzle.status === "UNLOCKED" ? (
-          <div className="space-y-6">
-            {puzzle.wrongAttempts > 0 ? (
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
-                Attempts {puzzle.wrongAttempts} · penalty −{puzzle.penaltyPoints}{" "}
-                / {GAME_CONSTANTS.scoring.wrongAnswerPenaltyCapPerPuzzle} cap
+        {/* Newspaper group solved summary */}
+        {group && group.solvedCount === group.totalCount ? (
+          <div className="space-y-3 border border-acid/30 bg-acid/5 px-4 py-3.5">
+            <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.2em] text-acid">
+              <CheckCircle2 className="h-4 w-4" />
+              All pieces recovered
+            </p>
+            <div className="space-y-1.5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+                Recovered information
+              </p>
+              {group.codes.map((code, index) => {
+                const p = snapshot.puzzles.find((pp) => pp.code === code);
+                return (
+                  <div key={code} className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-dim">{group.fieldLabels[index]}:</span>
+                    <span className="font-mono text-sm font-semibold tracking-[0.12em] text-ink">
+                      {p?.submittedAnswer ?? "\u2713"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            {puzzle.penaltyPoints > 0 ? (
+              <p className="font-mono text-[11px] leading-relaxed text-dim">
+                Wrong-answer penalties: −{puzzle.penaltyPoints}.
               </p>
             ) : null}
-            <InvestigationConsole status="active">
-              <AnswerForm key={puzzle.code} snapshot={snapshot} puzzle={puzzle} />
-            </InvestigationConsole>
-            <div className="border-t border-line/60 pt-4">
-              <HintRequest snapshot={snapshot} puzzle={puzzle} />
-            </div>
+          </div>
+        ) : null}
+
+        {puzzle.status === "UNLOCKED" ? (
+          <div className="space-y-6">
+            {group ? (
+              <MultiAnswerForm snapshot={snapshot} puzzle={puzzle} />
+            ) : (
+              <>
+                {puzzle.wrongAttempts > 0 ? (
+                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dim">
+                    Attempts {puzzle.wrongAttempts} · penalty −{puzzle.penaltyPoints}{" "}
+                    / {GAME_CONSTANTS.scoring.wrongAnswerPenaltyCapPerPuzzle} cap
+                  </p>
+                ) : null}
+                <InvestigationConsole status="active">
+                  <AnswerForm key={puzzle.code} snapshot={snapshot} puzzle={puzzle} />
+                </InvestigationConsole>
+                <div className="border-t border-line/60 pt-4">
+                  <HintRequest snapshot={snapshot} puzzle={puzzle} />
+                </div>
+              </>
+            )}
           </div>
         ) : null}
       </div>
@@ -458,7 +634,17 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
             question at once, vertical list from `lg` up.
           */}
           <ol className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:flex lg:flex-col lg:gap-0">
-            {snapshot.puzzles.map((puzzle) => {
+            {snapshot.puzzles
+              .filter((p) => {
+                // Hide non-anchor newspaper group puzzles — they are shown
+                // as part of the anchor's multi-answer form.
+                const newspaperCodes = new Set(NEWSPAPER_GROUP.codes);
+                if (newspaperCodes.has(p.code) && p.code !== NEWSPAPER_GROUP.anchorCode) {
+                  return false;
+                }
+                return true;
+              })
+              .map((puzzle) => {
               const locked = puzzle.status === "LOCKED";
               const isSelected = selected?.code === puzzle.code;
               return (
@@ -484,7 +670,9 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
                         {puzzle.code}
                       </span>
                       <span className="block truncate font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                        {puzzle.title}
+                        {puzzle.code === NEWSPAPER_GROUP.anchorCode && puzzle.newspaperGroup
+                          ? "Newspaper Evidence"
+                          : puzzle.title}
                       </span>
                     </span>
                     {puzzle.kind === "PHYSICAL_CHECKPOINT" ? (

@@ -26,9 +26,12 @@ import {
 import {
   CORRECT_SUSPECT_CODE,
   FINAL_CODE_PUZZLE_CODE,
+  NEWSPAPER_GROUP,
   SUSPECTS,
   answerInputFor,
+  getNewspaperGroup,
   isKnownSuspect,
+  isNewspaperGroupMember,
 } from "@/server/game/catalogue";
 import { auditRoundAnswers } from "@/server/game/content-guard";
 import { describeUnarmed } from "@/server/game/unarmed";
@@ -175,6 +178,25 @@ export async function getTeamRoundSnapshot(
             ),
           );
 
+  // Fetch submitted answers for solved puzzles (for solved-puzzle history).
+  const submittedAnswers =
+    puzzleIds.length === 0
+      ? []
+      : await db
+          .select({
+            puzzleId: puzzleAttempts.puzzleId,
+            submittedAnswer: puzzleAttempts.submittedAnswer,
+            isCorrect: puzzleAttempts.isCorrect,
+          })
+          .from(puzzleAttempts)
+          .where(
+            and(
+              eq(puzzleAttempts.teamId, teamId),
+              inArray(puzzleAttempts.puzzleId, puzzleIds),
+              eq(puzzleAttempts.isCorrect, true),
+            ),
+          );
+
   const [{ total }] = await db
     .select({
       total: sql<number>`coalesce(sum(${scoreEvents.delta}), 0)::int`.mapWith(
@@ -225,7 +247,7 @@ export async function getTeamRoundSnapshot(
       currentAssigned = true;
     }
 
-    return {
+    const snapshot: PuzzleSnapshot = {
       code: p.code,
       orderIndex: p.orderIndex,
       kind: p.kind,
@@ -241,10 +263,54 @@ export async function getTeamRoundSnapshot(
       hintsAvailable:
         status === "LOCKED" ? 0 : Math.max(0, hintList.length - usedHints.length),
       usedHints,
-      // Not gated on anything: a placeholder describes the SHAPE of the answer,
-      // not the answer, and the box has to render before a team can type in it.
       answerInput: answerInputFor(p.code),
+      // Show the team's own correct answer for solved puzzles (solved-puzzle history).
+      submittedAnswer:
+        status === "SOLVED"
+          ? (submittedAnswers.find((sa) => sa.puzzleId === p.id)?.submittedAnswer ?? null)
+          : null,
     };
+
+    // Newspaper group: attach group metadata if this puzzle belongs to one.
+    const group = getNewspaperGroup(p.code);
+    if (group && status !== "LOCKED") {
+      // Only the anchor code renders the group; others are hidden from the UI.
+      if (p.code === group.anchorCode) {
+        const groupProgress = progressRows.filter((row) => {
+          const pCode = roundPuzzles.find((rp) => rp.id === row.puzzleId)?.code;
+          return pCode && group.codes.includes(pCode);
+        });
+        const solvedCodes = new Set(
+          groupProgress
+            .filter((row) => row.status === "SOLVED")
+            .map((row) => roundPuzzles.find((rp) => rp.id === row.puzzleId)?.code)
+            .filter((c): c is string => typeof c === "string"),
+        );
+        // Build submitted answers in field order.
+        const submittedAnswers = group.codes.map((code) => {
+          if (solvedCodes.has(code)) {
+            // Find the correct answer text from the round puzzles to display.
+            // We cannot expose the canonical answer, but we can show what the
+            // team submitted by reading the attempt log.
+            return "\u2713"; // Checkmark placeholder — actual answer shown via attempt log
+          }
+          return null;
+        });
+
+        snapshot.newspaperGroup = {
+          codes: group.codes,
+          prompt: group.prompt,
+          fieldLabels: group.fieldLabels,
+          solvedCount: solvedCodes.size,
+          totalCount: group.codes.length,
+          submittedAnswers,
+        };
+      }
+      // Non-anchor codes are still present in the puzzle list but hidden by
+      // the UI when a newspaperGroup is present on the anchor.
+    }
+
+    return snapshot;
   });
 
   const solvedCount = puzzleSnapshots.filter((p) => p.status === "SOLVED").length;
@@ -452,6 +518,64 @@ export async function submitAnswer(input: {
         delta: puzzle.points,
         meta: { code: puzzle.code },
       });
+    }
+
+    /*
+      Newspaper group handling: the three newspaper puzzles (S4, S5, S6) are
+      presented as one question with three answer fields. Each individual answer
+      is marked SOLVED when correct, but the next puzzle in the chain only
+      unlocks once ALL answers in the group are solved.
+    */
+    const group = getNewspaperGroup(puzzle.code);
+    if (group) {
+      // Build a code→progress map for the group using roundPuzzles (code lookup).
+      const groupCodes = new Set(group.codes);
+      const groupPuzzleIds = roundPuzzles
+        .filter((p) => groupCodes.has(p.code))
+        .map((p) => p.id);
+      const codeById = new Map(roundPuzzles.map((p) => [p.id, p.code]));
+
+      const groupProgress = groupPuzzleIds.length === 0
+        ? []
+        : await tx
+            .select({ puzzleId: teamPuzzleProgress.puzzleId, status: teamPuzzleProgress.status })
+            .from(teamPuzzleProgress)
+            .where(
+              and(
+                eq(teamPuzzleProgress.teamId, teamId),
+                inArray(teamPuzzleProgress.puzzleId, groupPuzzleIds),
+              ),
+            );
+
+      const solvedCodes = new Set(
+        groupProgress
+          .filter((gp) => gp.status === "SOLVED")
+          .map((gp) => codeById.get(gp.puzzleId))
+          .filter((c): c is string => typeof c === "string"),
+      );
+      const allSolved = group.codes.every((code) => solvedCodes.has(code));
+
+      if (allSolved) {
+        // All newspaper answers found — unlock the next puzzle.
+        const next = roundPuzzles.find((p) => p.orderIndex === puzzle.orderIndex + 1);
+        if (next) {
+          await tx
+            .insert(teamPuzzleProgress)
+            .values({ teamId, puzzleId: next.id, status: "UNLOCKED", unlockedAt: now })
+            .onConflictDoNothing();
+          return {
+            outcome: "CORRECT",
+            message: "All three pieces of information recovered. The next puzzle is unlocked.",
+          };
+        }
+        return { outcome: "CORRECT", message: "All three pieces of information recovered." };
+      }
+
+      // Not all solved yet — report progress.
+      return {
+        outcome: "CORRECT",
+        message: `Entry accepted. ${solvedCodes.size}/${group.codes.length} pieces recovered. Continue investigating the newspaper.`,
+      };
     }
 
     const next = roundPuzzles.find((p) => p.orderIndex === puzzle.orderIndex + 1);

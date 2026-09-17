@@ -1,6 +1,10 @@
 import "server-only";
 
 import type { AnswerInputView } from "@/types/game";
+import {
+  NEWSPAPER_GROUP,
+  type NewspaperGroupConfig,
+} from "@/lib/game/newspaper-group";
 
 /**
  * [SERVER-ONLY — CONFIDENTIAL]
@@ -60,8 +64,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     title: "COLD BOOT",
     briefing:
       "SYSTEM OFFLINE. BREACH DETECTED AT 02:17\n" +
-      "Last message recovered: SXDBENOB KVSKC XSQRDYGV\n" +
-      "Add the digits of the time. Then step back.",
+      "Last message recovered: SXDBENOB KVSKC XSQRDYGV",
     answer: "NIGHTOWL",
     hints: [
       "The digits of 02:17 add up to a number. Move each letter back that many places in the alphabet. Enter one word, no spaces.",
@@ -81,7 +84,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "3048 | 02:05 | 02:30\n" +
       "4415 | 01:30 | 02:16\n" +
       "\n" +
-      "Security note: the entry scanner's clock runs 10 minutes slow. Which badge was inside at 2:17 AM?",
+      "Which badge was inside at 2:17 AM?",
     answer: "3048",
     hints: [
       "Only the entry scanner is wrong. Push every ENTRY time forward by 10 minutes and leave the exit times as printed. Enter the four digits.",
@@ -124,10 +127,10 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     kind: "DIGITAL",
     title: "ONE KEY TOO FAR",
     briefing:
-      "The keylogger caught the file name, but the intruder typed in the dark, one key too far right. Check the door.",
+      "The keylogger caught the file name. What is it?",
     answer: "GREENWASH",
     hints: [
-      "Read what is on the door, then move one key to the LEFT on a QWERTY keyboard for every character. One word.",
+      "The intruder typed in the dark, one key too far right. Read what is on the door, then move one key to the LEFT on a QWERTY keyboard for every character. One word.",
     ],
     points: 125,
     difficulty: "hard",
@@ -152,7 +155,6 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     title: "RECOVERED TRANSMISSION",
     briefing:
       "The signal appears to have been transmitted backwards.\n" +
-      "Restore the transmission and follow where it leads.\n" +
       "\n" +
       "33=xedni&nDaXbcZKzsGVksDs01yRDlP_wPmIPL1NLP=tsil&AnDXWiP971t=v?",
     answer: "RICKROLL",
@@ -202,11 +204,11 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     kind: "DIGITAL",
     title: "THE CASE CODE",
     briefing:
-      "Build the case code. Each tag is Puzzle number, then letter position.\n" +
+      "Build the case code.\n" +
       "6-3 · 5-2 · 3-5 · 1-2 · 1-5 · 1-6 · 6-5",
     answer: "TRAITOR",
     hints: [
-      "Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
+      "Each tag is Puzzle number, then letter position. Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
     ],
     points: 150,
     difficulty: "hard",
@@ -255,7 +257,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     orderIndex: 2,
     kind: "DIGITAL",
     title: "The Judging Schedule",
-    briefing: "When did Rohan's presentation begin? (HHMM, no colon)",
+    briefing: "When did Rohan's presentation begin?",
     answer: "0215",
     hints: [],
     points: 100,
@@ -264,11 +266,9 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     code: "S4",
     orderIndex: 3,
     kind: "DIGITAL",
-    title: "Newspaper — Crossword",
+    title: "Newspaper Evidence",
     briefing:
-      "Solve the crossword on page 4.\n" +
-      "Take the first letter of each answer, in hint order.\n" +
-      "What was the real crime?",
+      "Recover the hidden message from page 4 of the newspaper.",
     answer: "MISREPORTING",
     hints: [],
     points: 100,
@@ -277,10 +277,9 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     code: "S5",
     orderIndex: 4,
     kind: "DIGITAL",
-    title: "Newspaper — Highlighted Letters",
+    title: "Newspaper Evidence",
     briefing:
-      "The highlighted letters on page 2 reveal a hidden word.\n" +
-      "What is the word?",
+      "Recover the hidden message from page 2 of the newspaper.",
     answer: "INTERDEPENDENCE",
     hints: [],
     points: 100,
@@ -289,10 +288,9 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     code: "S6",
     orderIndex: 5,
     kind: "DIGITAL",
-    title: "Newspaper — Fill in the Blanks",
+    title: "Newspaper Evidence",
     briefing:
-      "Fill in the blanks in the paragraph on page 2.\n" +
-      "What word is revealed?",
+      "Recover the hidden message from page 2 of the newspaper.",
     answer: "MISUNDERSTOOD",
     hints: [],
     points: 100,
@@ -301,9 +299,9 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     code: "S7",
     orderIndex: 6,
     kind: "DIGITAL",
-    title: "Newspaper — Hidden QR Codes",
+    title: "Newspaper Evidence",
     briefing:
-      "The words “waste” and “podium” point to two QR codes hidden in the room.\n" +
+      'The words "waste" and "podium" point to two QR codes hidden in the room.\n' +
       "Find and scan both QR codes.\n" +
       "What do they reveal?",
     // Prop payload: both printed codes in props/s7/ decode to exactly this.
@@ -317,8 +315,8 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     kind: "DIGITAL",
     title: "The Gate Log",
     briefing:
-      "One suspect's car is in the gate log, and their statement says they were home all night.\n" +
-      "When did that car enter campus? (HHMM, no colon)",
+      "One suspect's car is in the gate log.\n" +
+      "When did that car enter campus?",
     answer: "0158",
     hints: [],
     points: 100,
@@ -341,6 +339,24 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     points: 150,
   },
 ];
+
+/* -------------------------------------------------------------------------- */
+/* Newspaper group — S4, S5, S6 presented as one question                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Re-export from the shared module for server-side consumers.
+ */
+export { NEWSPAPER_GROUP } from "@/lib/game/newspaper-group";
+export type { NewspaperGroupConfig as NewspaperGroup } from "@/lib/game/newspaper-group";
+export { isNewspaperGroupMember } from "@/lib/game/newspaper-group";
+
+const NEWSPAPER_CODE_SET = new Set(NEWSPAPER_GROUP.codes);
+
+/** Get the newspaper group for a puzzle code, or null if not grouped. */
+export function getNewspaperGroup(code: string): NewspaperGroupConfig | null {
+  return NEWSPAPER_CODE_SET.has(code) ? NEWSPAPER_GROUP : null;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Answer-box presentation                                                      */

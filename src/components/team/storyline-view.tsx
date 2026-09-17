@@ -32,8 +32,18 @@ const kindMeta = {
   ROUND_OPENED: { icon: Radio, tone: "text-acid", label: "opening" },
   BRIEFING_RECEIVED: { icon: FileText, tone: "text-mist", label: "directive" },
   LINK_BROKEN: { icon: CheckCircle2, tone: "text-acid", label: "link broken" },
+  CASE_NOTE: { icon: BookMarked, tone: "text-caution", label: "case note" },
   ROUND_ENDED: { icon: Hourglass, tone: "text-dim", label: "closed" },
 } as const;
+
+const statusTone: Record<string, string> = {
+  "NEW LEAD": "text-caution border-caution/30 bg-caution/5",
+  EVIDENCE: "text-acid border-acid/30 bg-acid/5",
+  CONTRADICTION: "text-alert border-alert/30 bg-alert/5",
+  DISCOVERY: "text-confirm border-confirm/30 bg-confirm/5",
+  CONNECTION: "text-pulse border-pulse/30 bg-pulse/5",
+  CONCLUSION: "text-ink border-ink/30 bg-ink/5",
+};
 
 function BeatRow({ beat, isNew }: { beat: StorylineBeat; isNew: boolean }) {
   const meta = kindMeta[beat.kind];
@@ -82,6 +92,17 @@ function BeatRow({ beat, isNew }: { beat: StorylineBeat; isNew: boolean }) {
             </time>
           ) : null}
         </div>
+        {/* Status tag for case notes */}
+        {beat.status ? (
+          <span
+            className={cn(
+              "inline-flex items-center border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em]",
+              statusTone[beat.status] ?? "text-dim border-line/30 bg-line/5",
+            )}
+          >
+            {beat.status}
+          </span>
+        ) : null}
         {beat.detail ? (
           <EvidenceObject type="document" isNew={isNew}>
             <p className="min-w-0 break-words whitespace-pre-line text-[13px] leading-relaxed text-mist sm:text-sm">

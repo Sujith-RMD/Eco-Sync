@@ -1,15 +1,13 @@
 import type { RoundSnapshot } from "@/types/game";
+import { getNarrativeEntry, type NarrativeEntry } from "@/lib/storyline/narrative";
 
 /**
  * Storyline derivation — pure, no storage, no React.
  *
- * There is no separate narrative table, and inventing one would mean writing
- * story content the supplied documents don't contain. So the case file is
- * *derived* from state the server already returns: a puzzle's briefing is the
- * discovery that reaches the team, and its `solvedAt` is the moment the chain
- * advanced. Everything rendered here therefore comes from `RoundSnapshot`,
- * which is already what the answer console renders — nothing hidden is
- * disclosed, and nothing new is authored.
+ * The case file is *derived* from state the server already returns, enriched
+ * with investigation narrative that advances the story. Each solved puzzle
+ * reveals new case information — what the discovery taught the investigators —
+ * rather than restating what puzzle was just solved.
  *
  * Locked puzzles contribute no beat at all, so the file cannot spoil a round
  * the team has not reached; `PuzzleSnapshot.briefing` is null while locked even
@@ -20,6 +18,7 @@ export type StorylineBeatKind =
   | "ROUND_OPENED"
   | "BRIEFING_RECEIVED"
   | "LINK_BROKEN"
+  | "CASE_NOTE"
   | "ROUND_ENDED";
 
 export interface StorylineBeat {
@@ -35,6 +34,8 @@ export interface StorylineBeat {
   detail: string | null;
   /** ISO instant when one exists; briefings carry no timestamp. */
   at: string | null;
+  /** Investigation status tag, when present. */
+  status?: NarrativeEntry["status"];
 }
 
 export interface Storyline {
@@ -54,7 +55,7 @@ export interface Storyline {
  * Builds the chronological case file for one round.
  *
  * Order is chronological by construction: the round opens, then each link in
- * chain order carries its briefing and (if broken) its solve stamp, then the
+ * chain order carries its briefing and (if broken) its narrative entry, then the
  * round closes. Puzzles are already sorted by `orderIndex` in the snapshot.
  */
 export function buildStoryline(snapshot: RoundSnapshot): Storyline {
@@ -76,31 +77,55 @@ export function buildStoryline(snapshot: RoundSnapshot): Storyline {
 
     // The briefing itself is the discovery. It is only ever present once the
     // link unseals, so surfacing it here reveals nothing early.
+    // For newspaper group puzzles, use the group prompt instead of individual briefings.
+    const groupPrompt = puzzle.newspaperGroup?.prompt;
     beats.push({
       id: `${puzzle.code}:briefing`,
       kind: "BRIEFING_RECEIVED",
       code: puzzle.code,
-      title: `Directive received — ${puzzle.code} // ${puzzle.title}`,
-      detail: puzzle.briefing,
+      title: puzzle.newspaperGroup
+        ? `Directive received — Newspaper Evidence`
+        : `Directive received — ${puzzle.code}`,
+      detail: groupPrompt ?? puzzle.briefing,
       at: null,
     });
 
     if (puzzle.status === "SOLVED") {
-      const notes: string[] = [];
-      if (puzzle.penaltyPoints > 0) {
-        notes.push(`Penalties absorbed on this link: −${puzzle.penaltyPoints}.`);
+      // Look up the investigation narrative for this puzzle.
+      const narrative = getNarrativeEntry(
+        puzzle.code,
+        snapshot.round.code,
+      );
+
+      if (narrative) {
+        // Rich narrative entry: what this discovery means for the case.
+        beats.push({
+          id: `${puzzle.code}:solved`,
+          kind: "CASE_NOTE",
+          code: puzzle.code,
+          title: narrative.title,
+          detail: narrative.detail,
+          at: puzzle.solvedAt,
+          status: narrative.status,
+        });
+      } else {
+        // Fallback: generic solve beat for puzzles without narrative content.
+        const notes: string[] = [];
+        if (puzzle.penaltyPoints > 0) {
+          notes.push(`Penalties absorbed: −${puzzle.penaltyPoints}.`);
+        }
+        if (puzzle.usedHints.length > 0) {
+          notes.push(`Hints drawn: ${puzzle.usedHints.length}.`);
+        }
+        beats.push({
+          id: `${puzzle.code}:solved`,
+          kind: "LINK_BROKEN",
+          code: puzzle.code,
+          title: `Link broken — ${puzzle.code} // ${puzzle.title}`,
+          detail: notes.length > 0 ? notes.join(" ") : null,
+          at: puzzle.solvedAt,
+        });
       }
-      if (puzzle.usedHints.length > 0) {
-        notes.push(`Hints drawn: ${puzzle.usedHints.length}.`);
-      }
-      beats.push({
-        id: `${puzzle.code}:solved`,
-        kind: "LINK_BROKEN",
-        code: puzzle.code,
-        title: `Link broken — ${puzzle.code} // ${puzzle.title}`,
-        detail: notes.length > 0 ? notes.join(" ") : null,
-        at: puzzle.solvedAt,
-      });
     }
   }
 
