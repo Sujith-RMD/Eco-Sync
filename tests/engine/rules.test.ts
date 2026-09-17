@@ -66,8 +66,8 @@ describe("scoring model", () => {
       scoring.timeBonusPerFullMinute,
     );
     // Base is 975 (5×75 easy + 2×100 medium + 2×125 hard + 150 final)
-    // Plus 80 time bonus (40 min × 2 pts/min)
-    expect(base + bonus).toBe(1055);
+    // Plus 90 time bonus (45 min × 2 pts/min)
+    expect(base + bonus).toBe(1065);
     expect(base + bonus).toBe(scoring.maxRound1Score);
   });
 

@@ -12,7 +12,7 @@
 export const GAME_CONSTANTS = {
   round1: {
     code: "ROUND_1" as const,
-    durationMinutes: 40,
+    durationMinutes: 45,
     puzzleCount: 10,
     easyPoints: 75,
     mediumPoints: 100,
@@ -22,7 +22,7 @@ export const GAME_CONSTANTS = {
   },
   round2: {
     code: "ROUND_2" as const,
-    durationMinutes: 75,
+    durationMinutes: 60,
     /** Display total for standings and team views. The chain itself is the
      *  database's; this is only the denominator printed next to it. */
     puzzleCount: 8,
@@ -33,7 +33,7 @@ export const GAME_CONSTANTS = {
     wrongAnswerPenalty: 25,
     wrongAnswerPenaltyCapPerPuzzle: 50,
     timeBonusPerFullMinute: 2,
-    maxRound1Score: 1055,
+    maxRound1Score: 1065,
     /** Server-enforced submission cooldown after a wrong answer. */
     lockoutSeconds: 10,
   },

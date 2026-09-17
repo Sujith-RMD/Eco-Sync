@@ -64,13 +64,15 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     title: "COLD BOOT",
     briefing:
       "SYSTEM OFFLINE. BREACH DETECTED AT 02:17\n" +
-      "Last message recovered: SXDBENOB KVSKC XSQRDYGV",
+      "Last message recovered: SXDBENOB KVSKC XSQRDYGV\n" +
+      "Add the digits of the time. Then step back.",
     answer: "NIGHTOWL",
     hints: [
       "The digits of 02:17 add up to a number. Move each letter back that many places in the alphabet. Enter one word, no spaces.",
     ],
     points: 100,
     difficulty: "medium",
+    answerPlaceholder: "ENTER ONE WORD",
   },
   {
     code: "P2",
@@ -84,7 +86,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
       "3048 | 02:05 | 02:30\n" +
       "4415 | 01:30 | 02:16\n" +
       "\n" +
-      "Which badge was inside at 2:17 AM?",
+      "Security note: the entry scanner's clock runs 10 minutes slow. Which badge was inside at 2:17 AM?",
     answer: "3048",
     hints: [
       "Only the entry scanner is wrong. Push every ENTRY time forward by 10 minutes and leave the exit times as printed. Enter the four digits.",
@@ -127,10 +129,10 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     kind: "DIGITAL",
     title: "ONE KEY TOO FAR",
     briefing:
-      "The keylogger caught the file name. What is it?",
+      "The keylogger caught the file name, but the intruder typed in the dark, one key too far right. Check the door.",
     answer: "GREENWASH",
     hints: [
-      "The intruder typed in the dark, one key too far right. Read what is on the door, then move one key to the LEFT on a QWERTY keyboard for every character. One word.",
+      "Read what is on the door, then move one key to the LEFT on a QWERTY keyboard for every character. One word.",
     ],
     points: 125,
     difficulty: "hard",
@@ -156,22 +158,28 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     briefing:
       "The signal appears to have been transmitted backwards.\n" +
       "\n" +
-      "33=xedni&nDaXbcZKzsGVksDs01yRDlP_wPmIPL1NLP=tsil&AnDXWiP971t=v?",
+      "Nothing is missing. Nothing is encrypted.\n" +
+      "\n" +
+      "Reverse the transmission and uncover where the signal was meant to lead.\n" +
+      "\n" +
+      "33=xedni&nDaXbcZKzsGVksDs01yRDlP_wPmIPL1NLP=tsil&AnDXWiP971t=v?\n" +
+      "\n" +
+      "What is the destination?",
     answer: "RICKROLL",
-    answerPlaceholder: "8 LETTER",
+    answerPlaceholder: "ENTER 8 LETTERS",
     hints: [
       "Reverse the string in the briefing. It reads as a YouTube URL — the video name is the answer.",
     ],
     points: 100,
     difficulty: "medium",
   },
-  {
+{
     code: "P8",
     orderIndex: 8,
     kind: "DIGITAL",
     title: "PACKET CAPTURE",
     briefing:
-      "Decode the hexadecimal payload and recover the hidden message.\n" +
+      "Decode the payload and recover the hidden message.\n" +
       "\n" +
       "[IMG:puzzles/packet-capture.png]",
     answer: "RESOURCE",
@@ -198,17 +206,17 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     points: 75,
     difficulty: "easy",
   },
-  {
+{
     code: "P10",
     orderIndex: 10,
     kind: "DIGITAL",
     title: "THE CASE CODE",
     briefing:
-      "Build the case code.\n" +
-      "6-3 · 5-2 · 3-5 · 1-2 · 1-5 · 1-6 · 6-5",
+      "Build the case code. Each tag is Puzzle number, then letter position.\n" +
+      "6-3 · 5-2 · 5-7 · 1-2 · 1-5 · 1-6 · 6-5",
     answer: "TRAITOR",
     hints: [
-      "Each tag is Puzzle number, then letter position. Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
+      "Take each letter from the answer you already submitted for that puzzle, counting from the first character. Seven letters.",
     ],
     points: 150,
     difficulty: "hard",
