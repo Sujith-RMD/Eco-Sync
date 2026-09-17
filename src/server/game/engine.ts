@@ -302,9 +302,8 @@ export async function getTeamRoundSnapshot(
         );
         const groupComplete = group.codes.every((code) => solvedCodes.has(code));
 
-        // QR answers live in hidden rows, so reflect their completion on the
-        // visible chain anchor as well.
-        if (groupComplete && !group.codes.includes(p.code)) {
+        // Hidden grouped answers must also resolve the visible chain anchor.
+        if (groupComplete) {
           snapshot.status = "SOLVED";
           snapshot.isCurrent = false;
           snapshot.solvedAt = snapshot.solvedAt ?? now.toISOString();

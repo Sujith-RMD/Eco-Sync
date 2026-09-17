@@ -429,12 +429,12 @@ function PuzzleDetail({ snapshot, puzzle }: { snapshot: RoundSnapshot; puzzle: P
           </div>
         ) : null}
 
-        {/* Newspaper group solved summary */}
+        {/* Multi-answer group solved summary */}
         {group && group.solvedCount === group.totalCount ? (
           <div className="space-y-3 border border-acid/30 bg-acid/5 px-4 py-3.5">
             <p className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.2em] text-acid">
               <CheckCircle2 className="h-4 w-4" />
-              All pieces recovered
+              All answers recovered
             </p>
             <div className="space-y-1.5">
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
