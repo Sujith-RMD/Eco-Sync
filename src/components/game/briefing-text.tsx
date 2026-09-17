@@ -97,9 +97,8 @@ export function BriefingText({
         return (
           <p
             key={index}
-            className={cn("min-w-0 overflow-x-auto whitespace-pre", className)}
+            className={cn("min-w-0 break-words whitespace-pre-line", className)}
             dangerouslySetInnerHTML={{ __html: block.value }}
-            style={{ fontSize: 'clamp(12px, 2.8vw, 14px)' }}
           >
             {index === firstTextIndex ? prefix : null}
           </p>
