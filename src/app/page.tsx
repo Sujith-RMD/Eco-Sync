@@ -60,6 +60,29 @@ export default function LandingPage() {
             evidence. Expose the insider before the trail goes cold.
           </p>
 
+          <section className="reveal reveal-3 mt-7 max-w-2xl border-l border-caution/50 pl-4 sm:mt-9 sm:pl-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-caution">
+              Incident brief // 02:17 AM
+            </p>
+            <div className="mt-3 space-y-3 text-sm leading-relaxed text-mist sm:text-base">
+              <p>
+                The ECO-SYNC system — the campus platform tracking critical
+                sustainability data — has gone offline after an overnight security
+                breach.
+              </p>
+              <p>Something has been altered. Someone got inside. And the trail is still fresh.</p>
+              <p>
+                You are now part of the investigation. Follow the evidence, decode
+                the clues, question what you find, and piece together what really
+                happened.
+              </p>
+              <p>Not everything is what it seems.</p>
+              <p className="font-serif text-base italic text-ink sm:text-lg">
+                The system is waiting. The investigation begins now.
+              </p>
+            </div>
+          </section>
+
           {/* Primary action — ENTER INVESTIGATION */}
           <div className="reveal reveal-4 mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <Link
