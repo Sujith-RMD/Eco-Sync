@@ -537,7 +537,7 @@ export async function submitAnswer(input: {
     }
 
     /*
-      Newspaper group handling: the three newspaper puzzles (S4, S5, S6) are
+      Multi-answer group handling: grouped answers are
       presented as one question with three answer fields. Each individual answer
       is marked SOLVED when correct, but the next puzzle in the chain only
       unlocks once ALL answers in the group are solved.
@@ -578,7 +578,7 @@ const groupProgress = groupPuzzleIds.length === 0
       const allSolved = group.codes.every((code) => solvedCodes.has(code));
 
       if (allSolved) {
-        // All newspaper answers found — unlock the next puzzle.
+        // All grouped answers found — unlock the next puzzle.
         const next = roundPuzzles.find((p) => p.orderIndex === puzzle.orderIndex + 1);
         if (next) {
           await tx
@@ -773,7 +773,7 @@ const statusByCode = new Map(
       groupProgress.map((gp) => [codeById.get(gp.puzzleId), gp.status]),
     );
 
-    // Already solved all three?
+    // Already solved every answer in the group?
     const allSolved = group.codes.every((code) => statusByCode.get(code) === "SOLVED");
     if (allSolved) {
       const next = anchorPuzzle
@@ -793,7 +793,17 @@ const statusByCode = new Map(
     const puzzleRows = await tx.query.puzzles.findMany({
       where: and(eq(puzzles.roundId, round.id), inArray(puzzles.code, group.codes)),
     });
-    const expectedByCode = new Map(puzzleRows.map((p) => [p.code, p.expectedAnswerNormalized]));
+    const solvedCodes = new Set(
+      groupProgress
+        .filter((gp) => gp.status === "SOLVED")
+        .map((gp) => codeById.get(gp.puzzleId))
+        .filter((code): code is string => typeof code === "string"),
+    );
+    const expectedByCode = new Map(
+      puzzleRows
+        .filter((p) => !solvedCodes.has(p.code))
+        .map((p) => [p.code, p.expectedAnswerNormalized]),
+    );
 
     // Check if already solved all
     const allSolvedCheck = group.codes.every((code) => {
@@ -815,7 +825,9 @@ const statusByCode = new Map(
     }
 
     // Match submitted answers to expected answers (order-independent)
-    const normalizedAnswers = new Set(answers.map((a) => normalizeAnswer(a)));
+    const normalizedAnswers = new Set(
+      answers.filter((answer) => answer.trim().length > 0).map((a) => normalizeAnswer(a)),
+    );
     const matchedCodes: string[] = [];
     const wrongAnswers: string[] = [];
 
@@ -834,10 +846,13 @@ const statusByCode = new Map(
     }
 
     const correctCount = matchedCodes.length;
-    const isFullyCorrect = correctCount === group.codes.length && wrongAnswers.length === 0;
+    const solvedAfterSubmission = new Set([...solvedCodes, ...matchedCodes]);
+    const isFullyCorrect =
+      group.codes.every((code) => solvedAfterSubmission.has(code)) &&
+      wrongAnswers.length === 0;
 
     if (isFullyCorrect) {
-      // All three correct — mark all as SOLVED and unlock next
+      // Every submitted group answer is correct — mark them SOLVED and unlock next
       for (const code of group.codes) {
         const puzzleRow = roundPuzzles.find((p) => p.code === code)!;
         const prog = groupProgress.find((gp) => codeById.get(gp.puzzleId) === code);
@@ -1590,7 +1605,7 @@ export async function unlockPuzzleForTeam(input: {
   /*
     `code` is unique per round rather than globally (`uq_puzzles_round_code`), so
     this resolves to exactly one row in practice — Round 01 is P1…P7, Round 02 is
-    S1…S8 + LAST. It is still checked rather than assumed: silently opening the
+    S1…S6 + LAST. It is still checked rather than assumed: silently opening the
     wrong round's link would be worse than refusing to act.
   */
   const matches = await db

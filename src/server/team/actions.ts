@@ -125,11 +125,14 @@ export async function submitMultiAnswerAction(
   if (!roundCode || !group || puzzleCode.length > 16) {
     return { status: "blocked", message: "Malformed submission." };
   }
-  if (answers.some((a) => a.length === 0 || a.length > 255)) {
+  if (answers.every((a) => a.length === 0)) {
     return {
       status: "blocked",
-      message: `Provide all ${answers.length} answers (max 255 characters each).`,
+      message: `Provide at least one answer (max 255 characters each).`,
     };
+  }
+  if (answers.some((a) => a.length > 255)) {
+    return { status: "blocked", message: "Answers must be 255 characters or fewer." };
   }
 
   const result = await submitMultiAnswer({

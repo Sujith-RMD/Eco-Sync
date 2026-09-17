@@ -184,30 +184,10 @@ export const ROUND2_NARRATIVE: Record<string, NarrativeEntry> = {
       "to raise the alarm before the breach — and was ignored.",
     status: "CONTRADICTION",
   },
-  S7: {
-    puzzleCode: "S7",
-    title: "CASE NOTE // 16",
-    timestamp: "02:46 IST",
-    detail:
-      "Both QR codes decode to DELETED. The backup data was wiped. " +
-      "But DELETED is not DESTROYED — the evidence exists somewhere. " +
-      "Someone wanted it hidden, not gone.",
-    status: "CONNECTION",
-  },
-  S8: {
-    puzzleCode: "S8",
-    title: "CASE NOTE // 17",
-    timestamp: "02:48 IST",
-    detail:
-      "A suspect's car entered campus at 01:58 — hours before the breach. " +
-      "Their statement says they were home all night. The gate log " +
-      "contradicts the alibi.",
-    status: "CONTRADICTION",
-  },
   LAST: {
     puzzleCode: "LAST",
-    title: "CASE NOTE // 18",
-    timestamp: "02:50 IST",
+    title: "CASE NOTE // 16",
+    timestamp: "02:46 IST",
     detail:
       "The final backup was hidden at the outdoor stage — a physical location " +
       "only someone with campus access would know. The data is recovered. " +

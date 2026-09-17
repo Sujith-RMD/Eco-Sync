@@ -224,8 +224,8 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* ROUND 2 — supplied questions only, in play order:                            */
-/* S1 → S3 → S4 → S5 → S6 → S7 → S8 → LAST → vote                              */
+/* ROUND 2 — supplied questions only, in play order:                          */
+/* S1 → S2 → S3 → S4 → S5 → S6 → LAST → vote                                  */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -240,12 +240,9 @@ export const FINAL_CODE_PUZZLE_CODE = "LAST";
  * a gap silently strands every later puzzle and an unset answer can block the
  * culprit vote.
  *
- * S7's QR payloads were never supplied, so the props are GENERATED from the
- * armed value instead: `props/s7/` holds two QR codes that each decode to
- * "DELETED" byte-exactly (verified with a decoder, not assumed), so a team that
- * scans either code and types what it sees matches. Database, this catalogue,
- * `db/round-2-content.sql` and `db/verify-round-2.sql` must always say the same
- * thing — a drift re-seals door 6 for every room behind it.
+ * The QR pair and newspaper answers are represented as hidden multi-answer rows.
+ * Database, this catalogue, and the content verification SQL must agree, or a
+ * drift re-seals the chain for every room behind the affected link.
  */
 export const ROUND2_PUZZLES: PuzzleSeed[] = [
   {
