@@ -260,7 +260,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
       "What is hidden in the note?",
     answer: "FUDGED",
     hints: [
-      "Look closely at how each line begins. The first letters reveal the answer.",
+      "Make the answer with the first letter of every sentence.",
     ],
     points: 100,
     answerPlaceholder: "ENTER ONE WORD",
@@ -275,7 +275,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
       "Use the four sheets to decode the recovered transmission and reverse it.",
     answer: "SUSTAINABILITY",
     hints: [
-      "Use the four physical sheets as the cipher key, then decode the transmission. Once decoded, read the recovered text from the other end.",
+      "Puzzle is outside the room in corridor.",
     ],
     points: 100,
     answerPlaceholder: "ENTER ONE WORD",

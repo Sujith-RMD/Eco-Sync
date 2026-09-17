@@ -300,6 +300,16 @@ export async function getTeamRoundSnapshot(
             .map((row) => roundPuzzles.find((rp) => rp.id === row.puzzleId)?.code)
             .filter((c): c is string => typeof c === "string"),
         );
+        const groupComplete = group.codes.every((code) => solvedCodes.has(code));
+
+        // QR answers live in hidden rows, so reflect their completion on the
+        // visible chain anchor as well.
+        if (groupComplete && !group.codes.includes(p.code)) {
+          snapshot.status = "SOLVED";
+          snapshot.isCurrent = false;
+          snapshot.solvedAt = snapshot.solvedAt ?? now.toISOString();
+        }
+
         // Build submitted answers in field order.
         const submittedAnswers = group.codes.map((code) => {
           if (solvedCodes.has(code)) {

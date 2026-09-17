@@ -78,6 +78,17 @@ set order_index = excluded.order_index,
     hints = excluded.hints,
     points = excluded.points;
 
+update puzzles p
+set hints = case p.code
+  when 'S1' then '["Make the answer with the first letter of every sentence."]'::jsonb
+  when 'S2' then '["Puzzle is outside the room in corridor."]'::jsonb
+  else p.hints
+end
+from rounds r
+where p.round_id = r.id
+  and r.code = 'ROUND_2'
+  and p.code in ('S1', 'S2');
+
 commit;
 
 select p.code, p.order_index, p.expected_answer_normalized
