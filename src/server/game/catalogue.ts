@@ -147,6 +147,7 @@ export const ROUND1_PUZZLES: PuzzleSeed[] = [
     hints: [
       "Copy the word off the glass exactly as it appears, then read your copy from the other end. Five letters.",
     ],
+    answerPlaceholder: "ENTER ONE WORD",
     points: 75,
     difficulty: "easy",
   },
