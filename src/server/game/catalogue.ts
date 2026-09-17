@@ -3,7 +3,7 @@ import "server-only";
 import type { AnswerInputView } from "@/types/game";
 import {
   NEWSPAPER_GROUP,
-  type NewspaperGroupConfig,
+  type MultiAnswerGroupConfig,
 } from "@/lib/game/newspaper-group";
 
 /**
@@ -275,12 +275,8 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     title: "THE FOUR WALLS",
     briefing:
       "Four physical sheets were recovered from the investigation room. Together, they form a cipher key.\n" +
-      "\n" +
-      "Use the four sheets to decode the recovered transmission:\n" +
-      "\n" +
-      "YTILIBANIATSUS\n" +
-      "\n" +
-      "What is the hidden word?",
+      "Use the four sheets to decode the recovered transmission and reverse it.\n" +
+      "Hint: puzzle is outside the room in corridor.",
     answer: "SUSTAINABILITY",
     hints: [
       "Use the four physical sheets as the cipher key, then decode the transmission. Once decoded, read the recovered text from the other end.",
@@ -293,7 +289,12 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     orderIndex: 3,
     kind: "DIGITAL",
     title: "The Judging Schedule",
-    briefing: "When did Rohan's presentation begin?",
+    briefing:
+      "OVERNIGHT HACKATHON: JUDGING ROUND, CS LAB\n\n" +
+      "First presentation starts at 1:00 AM.\n\n" +
+      "Each team gets 12 minutes, plus 3 minutes to change over.\n\n" +
+      "Presenting order: Team Byte, Team Loop, Team Kernel, Team Pixel, Team Stack, Team NightOwl (R. Das), Team Null.\n\n" +
+      "When did Rohan's presentation begin? (HHMM)",
     answer: "0215",
     hints: [],
     points: 100,
@@ -310,8 +311,8 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     points: 100,
   },
   {
-    code: "S5",
-    orderIndex: 5,
+    code: "S4a",
+    orderIndex: 100,
     kind: "DIGITAL",
     title: "Newspaper Evidence",
     briefing:
@@ -321,8 +322,8 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     points: 100,
   },
   {
-    code: "S6",
-    orderIndex: 6,
+    code: "S4b",
+    orderIndex: 101,
     kind: "DIGITAL",
     title: "Newspaper Evidence",
     briefing:
@@ -332,22 +333,42 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
     points: 100,
   },
   {
-    code: "S7",
-    orderIndex: 7,
+    code: "S5",
+    orderIndex: 5,
     kind: "DIGITAL",
-    title: "Newspaper Evidence",
+    title: "Hidden QR Codes",
     briefing:
-      'The words "waste" and "podium" point to two QR codes hidden in the room.\n' +
-      "Find and scan both QR codes.\n" +
-      "What do they reveal?",
-    // Prop payload: both printed codes in props/s7/ decode to exactly this.
-    answer: "DELETED",
+      'Two QR codes were found in the room. Scan both and recover the hidden words.',
+    answer: "RECYCLING",
+    hints: [],
+    points: 100,
+    answerPlaceholder: "ENTER ONE WORD",
+  },
+  {
+    code: "S5a",
+    orderIndex: 100,
+    kind: "DIGITAL",
+    title: "Hidden QR Codes",
+    briefing:
+      "Recover the hidden word from the first QR code.",
+    answer: "RECYCLING",
     hints: [],
     points: 100,
   },
   {
-    code: "S8",
-    orderIndex: 8,
+    code: "S5b",
+    orderIndex: 101,
+    kind: "DIGITAL",
+    title: "Hidden QR Codes",
+    briefing:
+      "Recover the hidden word from the second QR code.",
+    answer: "SEGREGATION",
+    hints: [],
+    points: 100,
+  },
+  {
+    code: "S6",
+    orderIndex: 6,
     kind: "DIGITAL",
     title: "The Gate Log",
     briefing:
@@ -359,7 +380,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: FINAL_CODE_PUZZLE_CODE,
-    orderIndex: 9,
+    orderIndex: 7,
     kind: "FINAL_CODE",
     title: "Outdoor Backup",
     briefing:
@@ -384,14 +405,19 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
  * Re-export from the shared module for server-side consumers.
  */
 export { NEWSPAPER_GROUP } from "@/lib/game/newspaper-group";
-export type { NewspaperGroupConfig as NewspaperGroup } from "@/lib/game/newspaper-group";
-export { isNewspaperGroupMember } from "@/lib/game/newspaper-group";
+export type { MultiAnswerGroupConfig as NewspaperGroup } from "@/lib/game/newspaper-group";
+
+export function isNewspaperGroupMember(code: string): boolean {
+  return NEWSPAPER_CODE_SET.has(code);
+}
 
 const NEWSPAPER_CODE_SET = new Set(NEWSPAPER_GROUP.codes);
 
 /** Get the newspaper group for a puzzle code, or null if not grouped. */
-export function getNewspaperGroup(code: string): NewspaperGroupConfig | null {
-  return NEWSPAPER_CODE_SET.has(code) ? NEWSPAPER_GROUP : null;
+export function getNewspaperGroup(code: string): MultiAnswerGroupConfig | null {
+  return NEWSPAPER_CODE_SET.has(code) || code === NEWSPAPER_GROUP.anchorCode
+    ? NEWSPAPER_GROUP
+    : null;
 }
 
 /* -------------------------------------------------------------------------- */

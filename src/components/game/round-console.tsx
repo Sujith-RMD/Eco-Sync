@@ -19,10 +19,11 @@ import {
   SendHorizontal,
   Trophy,
 } from "lucide-react";
-import { requestHintAction, submitAnswerAction } from "@/server/team/actions";
+import { requestHintAction, submitAnswerAction, submitMultiAnswerAction } from "@/server/team/actions";
 import { emitStorylineSignal } from "@/lib/storyline/signal";
 import {
   initialSubmitState,
+  initialMultiAnswerState,
   type PuzzleSnapshot,
   type RoundCode,
   type RoundSnapshot,
@@ -38,7 +39,7 @@ import { AutoRefresh, LockoutBadge, ServerCountdown } from "@/components/game/ti
 import { InvestigationConsole } from "@/components/investigation/InvestigationConsole";
 import { CaseFile } from "@/components/investigation/CaseFile";
 import { GAME_CONSTANTS } from "@/server/game/constants";
-import { NEWSPAPER_GROUP } from "@/lib/game/newspaper-group";
+import { MULTI_ANSWER_GROUPS } from "@/lib/game/newspaper-group";
 
 /* -------------------------------------------------------------------------- */
 /* Answer submission form (one per selected puzzle, keyed by code)             */
@@ -139,7 +140,7 @@ function MultiAnswerForm({
   puzzle: PuzzleSnapshot;
 }) {
   const router = useRouter();
-  const [state, formAction] = useActionState(submitAnswerAction, initialSubmitState);
+  const [state, formAction] = useActionState(submitMultiAnswerAction, initialMultiAnswerState);
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
   const group = puzzle.newspaperGroup;
 
@@ -174,29 +175,29 @@ function MultiAnswerForm({
         {group.prompt}
       </p>
 
-      <div className="space-y-3">
-        {group.codes.map((code, index) => {
-          const isSolved = solvedCodes.has(code);
-          const p = snapshot.puzzles.find((pp) => pp.code === code);
-          return (
-            <div key={code} className="space-y-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
-                {group.fieldLabels[index]}
+      <form action={formAction} className="space-y-4">
+        <input type="hidden" name="roundCode" value={snapshot.round.code} />
+        <input type="hidden" name="puzzleCode" value={group.anchorCode} />
+        <div className="space-y-3">
+          {group.codes.map((code, index) => {
+            const isSolved = solvedCodes.has(code);
+            const p = snapshot.puzzles.find((pp) => pp.code === code);
+            return (
+              <div key={code} className="space-y-1.5">
+                <label className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+                  {group.fieldLabels[index]}
+                  {isSolved ? (
+                    <span className="ml-2 text-acid">— recovered</span>
+                  ) : null}
+                </label>
                 {isSolved ? (
-                  <span className="ml-2 text-acid">— recovered</span>
-                ) : null}
-              </label>
-              {isSolved ? (
-                <div className="flex items-center gap-2 border border-acid/30 bg-acid/5 px-3.5 py-2.5 font-mono text-[12px] text-acid">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  Solv ed — answer recorded
-                </div>
-              ) : (
-                <form action={formAction} className="flex flex-col gap-3 sm:flex-row">
-                  <input type="hidden" name="roundCode" value={snapshot.round.code} />
-                  <input type="hidden" name="puzzleCode" value={code} />
+                  <div className="flex items-center gap-2 border border-acid/30 bg-acid/5 px-3.5 py-2.5 font-mono text-[12px] text-acid">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    Solved — answer recorded
+                  </div>
+                ) : (
                   <TextInput
-                    name="answer"
+                    name={`answer${index + 1}`}
                     required
                     maxLength={p?.answerInput.maxLength ?? 255}
                     autoComplete="off"
@@ -204,16 +205,16 @@ function MultiAnswerForm({
                     spellCheck={false}
                     placeholder={p?.answerInput.placeholder ?? "ENTER ANSWER"}
                     disabled={roundEnded || locked}
-                    className="flex-1 uppercase tracking-[0.2em]"
+                    className="w-full uppercase tracking-[0.2em]"
                     aria-label={`Answer for ${group.fieldLabels[index]}`}
                   />
-                  <SubmitButton disabled={roundEnded || locked} />
-                </form>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <SubmitButton disabled={roundEnded || locked} />
+      </form>
 
       {state.message ? (
         <div
@@ -221,16 +222,24 @@ function MultiAnswerForm({
           className={cn(
             "flex items-start gap-2.5 border px-3.5 py-3 font-mono text-[12px] leading-relaxed",
             state.status === "correct" && "border-confirm/40 bg-confirm/10 text-confirm",
+            state.status === "partial" && "border-caution/40 bg-caution/10 text-caution",
             state.status === "wrong" && "border-alert/40 bg-alert/10 text-alert",
             state.status === "blocked" && "border-caution/40 bg-caution/10 text-caution",
           )}
         >
           {state.status === "correct" ? (
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          ) : state.status === "partial" ? (
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           ) : (
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           )}
           {state.message}
+          {state.correctCount !== undefined && (
+            <span className="ml-2 font-mono text-[11px] text-caution">
+              ({state.correctCount}/3 correct)
+            </span>
+          )}
         </div>
       ) : null}
     </div>
@@ -636,10 +645,12 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
           <ol className="grid grid-cols-2 gap-px sm:grid-cols-3 lg:flex lg:flex-col lg:gap-0">
             {snapshot.puzzles
               .filter((p) => {
-                // Hide non-anchor newspaper group puzzles — they are shown
-                // as part of the anchor's multi-answer form.
-                const newspaperCodes = new Set(NEWSPAPER_GROUP.codes);
-                if (newspaperCodes.has(p.code) && p.code !== NEWSPAPER_GROUP.anchorCode) {
+                // Hide non-anchor multi-answer puzzles — they are shown as
+                // fields inside their group's anchor form.
+                const groupedCodes = new Set(
+                  MULTI_ANSWER_GROUPS.flatMap((group) => group.codes),
+                );
+                if (groupedCodes.has(p.code)) {
                   return false;
                 }
                 return true;
@@ -670,8 +681,8 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
                         {puzzle.code}
                       </span>
                       <span className="block truncate font-mono text-[10px] uppercase tracking-[0.14em] text-dim">
-                        {puzzle.code === NEWSPAPER_GROUP.anchorCode && puzzle.newspaperGroup
-                          ? "Newspaper Evidence"
+                        {puzzle.newspaperGroup
+                          ? puzzle.newspaperGroup.prompt
                           : puzzle.title}
                       </span>
                     </span>

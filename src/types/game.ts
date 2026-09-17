@@ -57,6 +57,8 @@ export interface PuzzleSnapshot {
    * group presented as a single question. The UI renders multiple answer fields.
    */
   newspaperGroup?: {
+    /** Puzzle code submitted as the server action's group anchor. */
+    anchorCode: string;
     /** All puzzle codes in the group, in display order. */
     codes: string[];
     /** Generic prompt shown instead of individual briefings. */
@@ -155,3 +157,12 @@ export interface VoteActionState {
 }
 
 export const initialVoteState: VoteActionState = { status: "idle" };
+
+export interface MultiAnswerActionState {
+  status: "idle" | "correct" | "partial" | "wrong" | "blocked";
+  message?: string;
+  lockoutUntil?: string | null;
+  correctCount?: number;
+}
+
+export const initialMultiAnswerState: MultiAnswerActionState = { status: "idle" };

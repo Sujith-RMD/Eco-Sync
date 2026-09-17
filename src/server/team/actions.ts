@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getMultiAnswerGroupByAnchor } from "@/lib/game/newspaper-group";
 import { requireTeam } from "@/lib/auth/guards";
-import { castVote, claimHint, submitAnswer } from "@/server/game/engine";
-import type { SubmitActionState, VoteActionState } from "@/types/game";
+import { castVote, claimHint, submitAnswer, submitMultiAnswer } from "@/server/game/engine";
+import type { SubmitActionState, VoteActionState, MultiAnswerActionState } from "@/types/game";
 import type { RoundCode } from "@/types/game";
 
 function roundPath(roundCode: RoundCode): string {
@@ -108,3 +109,47 @@ export async function castVoteAction(
   }
 }
 
+export async function submitMultiAnswerAction(
+  _previous: MultiAnswerActionState,
+  formData: FormData,
+): Promise<MultiAnswerActionState> {
+  const { team } = await requireTeam();
+
+  const roundCode = parseRoundCode(formData.get("roundCode"));
+  const puzzleCode = String(formData.get("puzzleCode") ?? "").trim();
+  const group = getMultiAnswerGroupByAnchor(puzzleCode);
+  const answers = group
+    ? group.codes.map((_, index) => String(formData.get(`answer${index + 1}`) ?? "").trim())
+    : [];
+
+  if (!roundCode || !group || puzzleCode.length > 16) {
+    return { status: "blocked", message: "Malformed submission." };
+  }
+  if (answers.some((a) => a.length === 0 || a.length > 255)) {
+    return {
+      status: "blocked",
+      message: `Provide all ${answers.length} answers (max 255 characters each).`,
+    };
+  }
+
+  const result = await submitMultiAnswer({
+    teamId: team.id,
+    roundCode,
+    anchorCode: puzzleCode,
+    answers,
+  });
+
+  revalidatePath(roundPath(roundCode));
+  revalidatePath("/lobby");
+
+  switch (result.outcome) {
+    case "CORRECT":
+      return { status: "correct", message: result.message };
+    case "PARTIAL":
+      return { status: "partial", message: result.message, correctCount: result.correctCount };
+    case "WRONG":
+      return { status: "wrong", message: result.message, lockoutUntil: result.lockoutUntil?.toISOString() ?? null };
+    default:
+      return { status: "blocked", message: result.message, lockoutUntil: result.lockoutUntil?.toISOString() ?? null };
+  }
+}

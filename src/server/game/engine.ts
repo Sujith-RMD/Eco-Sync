@@ -26,13 +26,14 @@ import {
 import {
   CORRECT_SUSPECT_CODE,
   FINAL_CODE_PUZZLE_CODE,
-  NEWSPAPER_GROUP,
   SUSPECTS,
   answerInputFor,
-  getNewspaperGroup,
   isKnownSuspect,
-  isNewspaperGroupMember,
 } from "@/server/game/catalogue";
+import {
+  getMultiAnswerGroup,
+  getMultiAnswerGroupByAnchor,
+} from "@/lib/game/newspaper-group";
 import { auditRoundAnswers } from "@/server/game/content-guard";
 import { describeUnarmed } from "@/server/game/unarmed";
 import { logAudit } from "@/server/audit/log";
@@ -145,7 +146,16 @@ export async function getTeamRoundSnapshot(
   }
 
   const roundPuzzles = await db
-    .select()
+    .select({
+      id: puzzles.id,
+      code: puzzles.code,
+      orderIndex: puzzles.orderIndex,
+      kind: puzzles.kind,
+      title: puzzles.title,
+      briefing: puzzles.briefing,
+      hints: puzzles.hints,
+      points: puzzles.points,
+    })
     .from(puzzles)
     .where(eq(puzzles.roundId, round.id))
     .orderBy(asc(puzzles.orderIndex));
@@ -272,7 +282,7 @@ export async function getTeamRoundSnapshot(
     };
 
     // Newspaper group: attach group metadata if this puzzle belongs to one.
-    const group = getNewspaperGroup(p.code);
+    const group = getMultiAnswerGroup(p.code);
     if (group && status !== "LOCKED") {
       // Only the anchor code renders the group; others are hidden from the UI.
       if (p.code === group.anchorCode) {
@@ -298,6 +308,7 @@ export async function getTeamRoundSnapshot(
         });
 
         snapshot.newspaperGroup = {
+          anchorCode: group.anchorCode,
           codes: group.codes,
           prompt: group.prompt,
           fieldLabels: group.fieldLabels,
@@ -409,7 +420,12 @@ export async function submitAnswer(input: {
   if (!puzzle) return { outcome: "PUZZLE_UNKNOWN", message: "Unknown puzzle reference." };
 
   const roundPuzzles = await db
-    .select({ id: puzzles.id, code: puzzles.code, orderIndex: puzzles.orderIndex })
+    .select({
+      id: puzzles.id,
+      code: puzzles.code,
+      orderIndex: puzzles.orderIndex,
+      points: puzzles.points,
+    })
     .from(puzzles)
     .where(eq(puzzles.roundId, round.id))
     .orderBy(asc(puzzles.orderIndex));
@@ -526,7 +542,7 @@ export async function submitAnswer(input: {
       is marked SOLVED when correct, but the next puzzle in the chain only
       unlocks once ALL answers in the group are solved.
     */
-    const group = getNewspaperGroup(puzzle.code);
+    const group = getMultiAnswerGroup(puzzle.code);
     if (group) {
       // Build a code→progress map for the group using roundPuzzles (code lookup).
       const groupCodes = new Set(group.codes);
@@ -535,17 +551,23 @@ export async function submitAnswer(input: {
         .map((p) => p.id);
       const codeById = new Map(roundPuzzles.map((p) => [p.id, p.code]));
 
-      const groupProgress = groupPuzzleIds.length === 0
-        ? []
-        : await tx
-            .select({ puzzleId: teamPuzzleProgress.puzzleId, status: teamPuzzleProgress.status })
-            .from(teamPuzzleProgress)
-            .where(
-              and(
-                eq(teamPuzzleProgress.teamId, teamId),
-                inArray(teamPuzzleProgress.puzzleId, groupPuzzleIds),
-              ),
-            );
+const groupProgress = groupPuzzleIds.length === 0
+      ? []
+      : await tx
+          .select({
+            id: teamPuzzleProgress.id,
+            puzzleId: teamPuzzleProgress.puzzleId,
+            status: teamPuzzleProgress.status,
+            wrongAttempts: teamPuzzleProgress.wrongAttempts,
+            wrongPenaltyPoints: teamPuzzleProgress.wrongPenaltyPoints,
+          })
+          .from(teamPuzzleProgress)
+          .where(
+            and(
+              eq(teamPuzzleProgress.teamId, teamId),
+              inArray(teamPuzzleProgress.puzzleId, groupPuzzleIds),
+            ),
+          );
 
       const solvedCodes = new Set(
         groupProgress
@@ -635,6 +657,331 @@ export async function submitAnswer(input: {
       result.outcome === "CORRECT" ? "game.puzzle.solved" : "game.puzzle.attempt",
     entity: "puzzle",
     entityId: input.puzzleCode,
+    meta: { round: roundCode, outcome: result.outcome },
+  });
+
+  return result;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Multi-answer submission (newspaper group)                                   */
+/* -------------------------------------------------------------------------- */
+
+export type MultiAnswerOutcome =
+  | "CORRECT"
+  | "PARTIAL"
+  | "WRONG"
+  | "LOCKOUT"
+  | "LOCKED_PUZZLE"
+  | "ALREADY_SOLVED"
+  | "ROUND_NOT_ACTIVE"
+  | "ROUND_EXPIRED"
+  | "PUZZLE_UNKNOWN"
+  | "NOT_QUALIFIED"
+  | "ERROR";
+
+export interface MultiAnswerResult {
+  outcome: MultiAnswerOutcome;
+  message: string;
+  lockoutUntil?: Date | null;
+  deduction?: number;
+  correctCount?: number;
+}
+
+/**
+ * Submit all three newspaper answers at once.
+ * Validates the submitted set against the required answers (order-independent).
+ * If all three are correct, marks all three as SOLVED and unlocks the next puzzle.
+ * If partially correct, marks only the correct ones as SOLVED.
+ * If any are wrong, applies lockout/penalty.
+ */
+export async function submitMultiAnswer(input: {
+  teamId: number;
+  roundCode: RoundCode;
+  anchorCode: string;
+  answers: string[];
+}): Promise<MultiAnswerResult> {
+  const { teamId, roundCode, anchorCode, answers } = input;
+  const now = new Date();
+
+  const round = await db.query.rounds.findFirst({
+    where: eq(rounds.code, roundCode),
+  });
+  if (!round) return { outcome: "ERROR", message: "Event is not initialized. Contact coordinators." };
+  if (round.status !== "ACTIVE") {
+    return { outcome: "ROUND_NOT_ACTIVE", message: "This round is not live. Await the go-signal from command." };
+  }
+  if (round.endsAt && now.getTime() >= round.endsAt.getTime()) {
+    return { outcome: "ROUND_EXPIRED", message: "Official time has expired. Submissions are closed." };
+  }
+
+  if (roundCode === "ROUND_2") {
+    const participation = await findParticipation(teamId, round.id);
+    if (!participation) return { outcome: "NOT_QUALIFIED", message: "Your team did not qualify for Round 02." };
+  }
+
+  const group = getMultiAnswerGroupByAnchor(anchorCode);
+  if (!group) return { outcome: "PUZZLE_UNKNOWN", message: "Unknown puzzle reference." };
+
+  const roundPuzzles = await db
+    .select({
+      id: puzzles.id,
+      code: puzzles.code,
+      orderIndex: puzzles.orderIndex,
+      points: puzzles.points,
+    })
+    .from(puzzles)
+    .where(eq(puzzles.roundId, round.id))
+    .orderBy(asc(puzzles.orderIndex));
+
+  const groupPuzzleIds = roundPuzzles
+    .filter((p) => group.codes.includes(p.code))
+    .map((p) => p.id);
+  const codeById = new Map(roundPuzzles.map((p) => [p.id, p.code]));
+
+  const result = await db.transaction(async (tx): Promise<MultiAnswerResult> => {
+    // Hidden answer rows need progress records before partial or wrong
+    // submissions can update their attempt counters.
+    for (const puzzleId of groupPuzzleIds) {
+      await tx
+        .insert(teamPuzzleProgress)
+        .values({ teamId, puzzleId, status: "UNLOCKED", unlockedAt: now })
+        .onConflictDoNothing();
+    }
+
+    // Check progress for all puzzles in the group
+    const groupProgress = groupPuzzleIds.length === 0
+      ? []
+      : await tx
+          .select({
+            id: teamPuzzleProgress.id,
+            puzzleId: teamPuzzleProgress.puzzleId,
+            status: teamPuzzleProgress.status,
+            wrongAttempts: teamPuzzleProgress.wrongAttempts,
+            wrongPenaltyPoints: teamPuzzleProgress.wrongPenaltyPoints,
+          })
+          .from(teamPuzzleProgress)
+          .where(
+            and(
+              eq(teamPuzzleProgress.teamId, teamId),
+              inArray(teamPuzzleProgress.puzzleId, groupPuzzleIds),
+            ),
+          );
+
+const statusByCode = new Map(
+      groupProgress.map((gp) => [codeById.get(gp.puzzleId), gp.status]),
+    );
+
+    // Already solved all three?
+    const allSolved = group.codes.every((code) => statusByCode.get(code) === "SOLVED");
+    if (allSolved) {
+      const next = roundPuzzles.find((p) => p.orderIndex === group.codes.length + 1);
+      if (next) {
+        await tx
+          .insert(teamPuzzleProgress)
+          .values({ teamId, puzzleId: next.id, status: "UNLOCKED", unlockedAt: now })
+          .onConflictDoNothing();
+        return { outcome: "CORRECT", message: "All three pieces of information recovered. The next puzzle is unlocked." };
+      }
+      return { outcome: "CORRECT", message: "All three pieces of information recovered." };
+    }
+
+    // Fetch expected answers from DB
+    const puzzleRows = await tx.query.puzzles.findMany({
+      where: and(eq(puzzles.roundId, round.id), inArray(puzzles.code, group.codes)),
+    });
+    const expectedByCode = new Map(puzzleRows.map((p) => [p.code, p.expectedAnswerNormalized]));
+
+    // Check if already solved all
+    const allSolvedCheck = group.codes.every((code) => {
+      const prog = groupProgress.find((gp) => codeById.get(gp.puzzleId) === code);
+      return prog?.status === "SOLVED";
+    });
+    if (allSolvedCheck) {
+      const next = roundPuzzles.find((p) => p.orderIndex === group.codes.length + 1);
+      if (next) {
+        await tx
+          .insert(teamPuzzleProgress)
+          .values({ teamId, puzzleId: next.id, status: "UNLOCKED", unlockedAt: now })
+          .onConflictDoNothing();
+        return { outcome: "CORRECT", message: "All three pieces of information recovered. The next puzzle is unlocked." };
+      }
+      return { outcome: "CORRECT", message: "All three pieces of information recovered." };
+    }
+
+    // Match submitted answers to expected answers (order-independent)
+    const normalizedAnswers = new Set(answers.map((a) => normalizeAnswer(a)));
+    const matchedCodes: string[] = [];
+    const wrongAnswers: string[] = [];
+
+    for (const submitted of normalizedAnswers) {
+      let matched = false;
+      for (const [code, expected] of expectedByCode.entries()) {
+        if (submitted === expected) {
+          matchedCodes.push(code);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        wrongAnswers.push(submitted);
+      }
+    }
+
+    const correctCount = matchedCodes.length;
+    const isFullyCorrect = correctCount === group.codes.length && wrongAnswers.length === 0;
+
+    if (isFullyCorrect) {
+      // All three correct — mark all as SOLVED and unlock next
+      for (const code of group.codes) {
+        const puzzleRow = roundPuzzles.find((p) => p.code === code)!;
+        const prog = groupProgress.find((gp) => codeById.get(gp.puzzleId) === code);
+        if (prog) {
+await tx
+            .update(teamPuzzleProgress)
+            .set({ status: "SOLVED", solvedAt: now, lockedUntil: null })
+            .where(eq(teamPuzzleProgress.id, prog.id));
+        } else {
+          await tx
+            .insert(teamPuzzleProgress)
+            .values({ teamId, puzzleId: puzzleRow.id, status: "SOLVED", solvedAt: now, lockedUntil: null })
+            .onConflictDoNothing();
+        }
+        await tx.insert(puzzleAttempts).values({
+          teamId,
+          puzzleId: puzzleRow.id,
+          submittedAnswer: answers.find((a) => normalizeAnswer(a) === expectedByCode.get(code))?.slice(0, 500) ?? "",
+          normalizedAnswer: expectedByCode.get(code)!.slice(0, 255),
+          isCorrect: true,
+          penaltyApplied: 0,
+        });
+        if (puzzleRow.points > 0) {
+          await tx.insert(scoreEvents).values({
+            teamId,
+            roundId: round.id,
+            puzzleId: puzzleRow.id,
+            type: "PUZZLE_SOLVED",
+            delta: puzzleRow.points,
+            meta: { code: puzzleRow.code },
+          });
+        }
+      }
+
+      const next = roundPuzzles.find((p) => p.orderIndex === group.codes.length + 1);
+      if (next) {
+        await tx
+          .insert(teamPuzzleProgress)
+          .values({ teamId, puzzleId: next.id, status: "UNLOCKED", unlockedAt: now })
+          .onConflictDoNothing();
+        return { outcome: "CORRECT", message: "All three pieces of information recovered. The next puzzle is unlocked." };
+      }
+      return { outcome: "CORRECT", message: "All three pieces of information recovered." };
+    }
+
+    // Partial correct — mark matched as SOLVED, wrong answers get penalty/lockout
+for (const code of matchedCodes) {
+      const prog = groupProgress.find((gp) => codeById.get(gp.puzzleId) === code);
+      if (prog && prog.status !== "SOLVED") {
+        await tx
+          .update(teamPuzzleProgress)
+          .set({ status: "SOLVED", solvedAt: now, lockedUntil: null })
+          .where(eq(teamPuzzleProgress.id, prog.id));
+      }
+      const puzzleRow = roundPuzzles.find((p) => p.code === code)!;
+      await tx.insert(puzzleAttempts).values({
+        teamId,
+        puzzleId: puzzleRow.id,
+        submittedAnswer: answers.find((a) => normalizeAnswer(a) === expectedByCode.get(code))?.slice(0, 500) ?? "",
+        normalizedAnswer: expectedByCode.get(code)!.slice(0, 255),
+        isCorrect: true,
+        penaltyApplied: 0,
+      });
+      if (puzzleRow.points > 0) {
+        await tx.insert(scoreEvents).values({
+          teamId,
+          roundId: round.id,
+          puzzleId: puzzleRow.id,
+          type: "PUZZLE_SOLVED",
+          delta: puzzleRow.points,
+          meta: { code: puzzleRow.code },
+        });
+      }
+    }
+
+    // Wrong answers: apply penalty and lockout
+    if (wrongAnswers.length > 0) {
+      const unsolvedCodes = group.codes.filter((code) => !matchedCodes.includes(code));
+      if (unsolvedCodes.length > 0) {
+        const firstUnsolved = unsolvedCodes[0];
+        const puzzleRow = roundPuzzles.find((p) => p.code === firstUnsolved)!;
+        const prog = groupProgress.find((gp) => codeById.get(gp.puzzleId) === firstUnsolved);
+const wrongAttempts = prog?.wrongAttempts ?? 0;
+        const penaltyAlreadyApplied = prog?.wrongPenaltyPoints ?? 0;
+
+        const deduction = wrongPenaltyForAttempt(
+          penaltyAlreadyApplied,
+          C.scoring.wrongAnswerPenalty,
+          C.scoring.wrongAnswerPenaltyCapPerPuzzle,
+          wrongAttempts,
+        );
+
+        for (const wrong of wrongAnswers) {
+          await tx.insert(puzzleAttempts).values({
+            teamId,
+            puzzleId: puzzleRow.id,
+            submittedAnswer: wrong.slice(0, 500),
+            normalizedAnswer: normalizeAnswer(wrong).slice(0, 255),
+            isCorrect: false,
+            penaltyApplied: deduction,
+          });
+        }
+
+        if (deduction > 0) {
+          await tx.insert(scoreEvents).values({
+            teamId,
+            roundId: round.id,
+            puzzleId: puzzleRow.id,
+            type: "WRONG_ANSWER",
+            delta: -deduction,
+            meta: { attempt: wrongAttempts + 1 },
+          });
+        }
+
+        const lockoutUntil = new Date(now.getTime() + C.scoring.lockoutSeconds * 1000);
+        await tx
+          .update(teamPuzzleProgress)
+          .set({
+            wrongAttempts: wrongAttempts + 1,
+            wrongPenaltyPoints: penaltyAlreadyApplied + deduction,
+            lockedUntil: lockoutUntil,
+          })
+          .where(eq(teamPuzzleProgress.id, prog!.id));
+
+return {
+          outcome: "WRONG",
+          message:
+            deduction > 0
+              ? `Incorrect. −${deduction} points. ${C.scoring.lockoutSeconds}s lockout engaged.`
+              : `Incorrect. Penalty cap reached for this puzzle. ${C.scoring.lockoutSeconds}s lockout engaged.`,
+          lockoutUntil,
+          deduction,
+        };
+      }
+    }
+
+    return {
+      outcome: "PARTIAL",
+      message: `${correctCount}/3 pieces recovered. Continue investigating the newspaper.`,
+      correctCount,
+    };
+  });
+
+  await logAudit({
+    actorType: "TEAM",
+    actorId: teamId,
+    action: result.outcome === "CORRECT" ? "game.puzzle.solved" : "game.puzzle.attempt",
+    entity: "puzzle",
+    entityId: anchorCode,
     meta: { round: roundCode, outcome: result.outcome },
   });
 
@@ -1436,3 +1783,7 @@ export async function adminVotesOverview() {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   };
 }
+
+
+
+
