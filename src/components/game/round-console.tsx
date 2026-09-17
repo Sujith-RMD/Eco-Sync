@@ -650,7 +650,10 @@ export function RoundConsole({ snapshot }: { snapshot: RoundSnapshot }) {
                 const groupedCodes = new Set(
                   MULTI_ANSWER_GROUPS.flatMap((group) => group.codes),
                 );
-                if (groupedCodes.has(p.code)) {
+                const group = MULTI_ANSWER_GROUPS.find((candidate) =>
+                  candidate.codes.includes(p.code),
+                );
+                if (group && p.code !== group.anchorCode) {
                   return false;
                 }
                 return true;

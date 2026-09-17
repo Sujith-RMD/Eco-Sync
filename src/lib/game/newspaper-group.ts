@@ -24,7 +24,7 @@ export interface MultiAnswerGroupConfig {
  */
 export const NEWSPAPER_GROUP: MultiAnswerGroupConfig = {
   anchorCode: "S4",
-  codes: ["S4a", "S4b", "S4c"],
+  codes: ["S4", "S4a", "S4b"],
   prompt:
     "Investigate the newspaper and recover the three pieces of information hidden within it.",
   fieldLabels: ["Answer 1", "Answer 2", "Answer 3"],
@@ -55,7 +55,9 @@ export const MULTI_ANSWER_GROUPS: MultiAnswerGroupConfig[] = [
  * All puzzle codes that belong to any multi-answer group.
  */
 const MULTI_ANSWER_CODE_SET = new Set(
-  MULTI_ANSWER_GROUPS.flatMap((g) => g.codes),
+  MULTI_ANSWER_GROUPS.flatMap((g) =>
+    g.codes.filter((code) => code !== g.anchorCode),
+  ),
 );
 
 /**

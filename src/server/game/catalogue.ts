@@ -346,7 +346,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S5a",
-    orderIndex: 100,
+    orderIndex: 110,
     kind: "DIGITAL",
     title: "Hidden QR Codes",
     briefing:
@@ -357,7 +357,7 @@ export const ROUND2_PUZZLES: PuzzleSeed[] = [
   },
   {
     code: "S5b",
-    orderIndex: 101,
+    orderIndex: 111,
     kind: "DIGITAL",
     title: "Hidden QR Codes",
     briefing:

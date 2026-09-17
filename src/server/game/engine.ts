@@ -738,6 +738,7 @@ export async function submitMultiAnswer(input: {
     .filter((p) => group.codes.includes(p.code))
     .map((p) => p.id);
   const codeById = new Map(roundPuzzles.map((p) => [p.id, p.code]));
+  const anchorPuzzle = roundPuzzles.find((p) => p.code === group.anchorCode);
 
   const result = await db.transaction(async (tx): Promise<MultiAnswerResult> => {
     // Hidden answer rows need progress records before partial or wrong
@@ -775,7 +776,9 @@ const statusByCode = new Map(
     // Already solved all three?
     const allSolved = group.codes.every((code) => statusByCode.get(code) === "SOLVED");
     if (allSolved) {
-      const next = roundPuzzles.find((p) => p.orderIndex === group.codes.length + 1);
+      const next = anchorPuzzle
+        ? roundPuzzles.find((p) => p.orderIndex === anchorPuzzle.orderIndex + 1)
+        : undefined;
       if (next) {
         await tx
           .insert(teamPuzzleProgress)
@@ -798,7 +801,9 @@ const statusByCode = new Map(
       return prog?.status === "SOLVED";
     });
     if (allSolvedCheck) {
-      const next = roundPuzzles.find((p) => p.orderIndex === group.codes.length + 1);
+      const next = anchorPuzzle
+        ? roundPuzzles.find((p) => p.orderIndex === anchorPuzzle.orderIndex + 1)
+        : undefined;
       if (next) {
         await tx
           .insert(teamPuzzleProgress)
@@ -867,7 +872,9 @@ await tx
         }
       }
 
-      const next = roundPuzzles.find((p) => p.orderIndex === group.codes.length + 1);
+      const next = anchorPuzzle
+        ? roundPuzzles.find((p) => p.orderIndex === anchorPuzzle.orderIndex + 1)
+        : undefined;
       if (next) {
         await tx
           .insert(teamPuzzleProgress)
